@@ -970,15 +970,16 @@
       "evidenceArtifact": null
     },
     {
-      "id": "019cc543-573d-7a3f-b155-ad9cc5733aa6",
-      "organization": "arena",
-      "provider": null,
+      "id": "019b1448-ff14-7c98-a1ac-726fece799ec",
+      "organization": "openai",
+      "provider": "openai",
       "publicName": "gpt-5.2",
-      "name": null,
+      "name": "gpt-5.2-no-system-prompt-text",
       "displayName": "gpt-5.2",
       "capabilities": {
         "inputCapabilities": {
           "text": true,
+          "image": true,
           "file": true
         },
         "outputCapabilities": {
@@ -991,16 +992,15 @@
       "evidenceArtifact": null
     },
     {
-      "id": "019b1448-ff14-7c98-a1ac-726fece799ec",
-      "organization": "openai",
-      "provider": "openai",
+      "id": "019cc543-573d-7a3f-b155-ad9cc5733aa6",
+      "organization": "arena",
+      "provider": null,
       "publicName": "gpt-5.2",
-      "name": "gpt-5.2-no-system-prompt-text",
+      "name": null,
       "displayName": "gpt-5.2",
       "capabilities": {
         "inputCapabilities": {
           "text": true,
-          "image": true,
           "file": true
         },
         "outputCapabilities": {
@@ -3935,6 +3935,28 @@
       "evidenceArtifact": null
     },
     {
+      "id": "019b5265-8405-799e-87af-199dc9f4ad4a",
+      "organization": "google",
+      "provider": "googleVertexGlobalWithThoughtSignatures",
+      "publicName": "gemini-3-flash (thinking-minimal)",
+      "name": "gemini-3-flash-thinking-minimal-fixed-20251224",
+      "displayName": "gemini-3-flash (thinking-minimal)",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": true,
+      "catalogStatus": "catalog",
+      "discoveredByModelsTest": false,
+      "evidenceArtifact": null
+    },
+    {
       "id": "019db753-2ce6-77e2-a2e1-c2db9b7f5640",
       "organization": "arena",
       "provider": null,
@@ -3988,6 +4010,29 @@
         },
         "outputCapabilities": {
           "text": true
+        }
+      },
+      "userSelectable": true,
+      "catalogStatus": "catalog",
+      "discoveredByModelsTest": false,
+      "evidenceArtifact": null
+    },
+    {
+      "id": "019d308f-e3c0-72e5-b819-f51d807653df",
+      "organization": "moonshot",
+      "provider": "moonshot",
+      "publicName": "kimi-k2.5",
+      "name": "kimi-k2.5-20260327",
+      "displayName": "kimi-k2.5-thinking",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
         }
       },
       "userSelectable": true,
@@ -4414,6 +4459,27 @@
       "publicName": "vortex",
       "name": null,
       "displayName": "vortex",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": true,
+      "catalogStatus": "catalog",
+      "discoveredByModelsTest": false,
+      "evidenceArtifact": null
+    },
+    {
+      "id": "19ad5f04-38c6-48ae-b826-f7d5bbfd79f7",
+      "organization": "openai",
+      "provider": "openai",
+      "publicName": "gpt-5-high-new-system-prompt",
+      "name": "gpt-5-high-new-system-prompt",
+      "displayName": "gpt-5-high-new-system-prompt",
       "capabilities": {
         "inputCapabilities": {
           "text": true,
@@ -7042,28 +7108,6 @@
       "evidenceArtifact": null
     },
     {
-      "id": "019b5265-8405-799e-87af-199dc9f4ad4a",
-      "organization": "google",
-      "provider": "googleVertexGlobalWithThoughtSignatures",
-      "publicName": "gemini-3-flash (thinking-minimal)",
-      "name": "gemini-3-flash-thinking-minimal-fixed-20251224",
-      "displayName": "gemini-3-flash (thinking-minimal)",
-      "capabilities": {
-        "inputCapabilities": {
-          "text": true,
-          "image": true
-        },
-        "outputCapabilities": {
-          "text": true,
-          "web": true
-        }
-      },
-      "userSelectable": true,
-      "catalogStatus": "catalog",
-      "discoveredByModelsTest": false,
-      "evidenceArtifact": null
-    },
-    {
       "id": "6fe1ec40-3219-4c33-b3e7-0e65658b4194",
       "organization": "alibaba",
       "provider": "alibaba",
@@ -7127,29 +7171,6 @@
       "evidenceArtifact": null
     },
     {
-      "id": "019d308f-e3c0-72e5-b819-f51d807653df",
-      "organization": "moonshot",
-      "provider": "moonshot",
-      "publicName": "kimi-k2.5",
-      "name": "kimi-k2.5-20260327",
-      "displayName": "kimi-k2.5-thinking",
-      "capabilities": {
-        "inputCapabilities": {
-          "text": true,
-          "image": true,
-          "file": true
-        },
-        "outputCapabilities": {
-          "text": true,
-          "web": true
-        }
-      },
-      "userSelectable": true,
-      "catalogStatus": "catalog",
-      "discoveredByModelsTest": false,
-      "evidenceArtifact": null
-    },
-    {
       "id": "019e1d96-9710-760d-8299-1acaebc9e6c5",
       "organization": "arena",
       "provider": null,
@@ -7176,27 +7197,6 @@
       "publicName": "qwen3-vl-8b-instruct",
       "name": "qwen3-vl-8b-instruct",
       "displayName": "qwen3-vl-8b-instruct",
-      "capabilities": {
-        "inputCapabilities": {
-          "text": true,
-          "image": true
-        },
-        "outputCapabilities": {
-          "text": true
-        }
-      },
-      "userSelectable": true,
-      "catalogStatus": "catalog",
-      "discoveredByModelsTest": false,
-      "evidenceArtifact": null
-    },
-    {
-      "id": "19ad5f04-38c6-48ae-b826-f7d5bbfd79f7",
-      "organization": "openai",
-      "provider": "openai",
-      "publicName": "gpt-5-high-new-system-prompt",
-      "name": "gpt-5-high-new-system-prompt",
-      "displayName": "gpt-5-high-new-system-prompt",
       "capabilities": {
         "inputCapabilities": {
           "text": true,
@@ -11040,6 +11040,34 @@
       "evidenceArtifact": null
     },
     {
+      "id": "019d2c92-5c4d-7b5f-8eda-b45f179e6444",
+      "organization": "kling",
+      "provider": "fal",
+      "publicName": "kling-image-o1",
+      "name": "kling-image-o1-fal",
+      "displayName": "kling-image-o1",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": {
+            "requiresUpload": true,
+            "multipleImages": true
+          }
+        },
+        "outputCapabilities": {
+          "image": {
+            "aspectRatios": [
+              "1:1"
+            ]
+          }
+        }
+      },
+      "userSelectable": true,
+      "catalogStatus": "catalog",
+      "discoveredByModelsTest": false,
+      "evidenceArtifact": null
+    },
+    {
       "id": "32bff2df-00e6-409b-ad3f-bfbad87cc49f",
       "organization": "arena",
       "provider": null,
@@ -12532,34 +12560,6 @@
       "evidenceArtifact": null
     },
     {
-      "id": "019d2c92-5c4d-7b5f-8eda-b45f179e6444",
-      "organization": "kling",
-      "provider": "fal",
-      "publicName": "kling-image-o1",
-      "name": "kling-image-o1-fal",
-      "displayName": "kling-image-o1",
-      "capabilities": {
-        "inputCapabilities": {
-          "text": true,
-          "image": {
-            "requiresUpload": true,
-            "multipleImages": true
-          }
-        },
-        "outputCapabilities": {
-          "image": {
-            "aspectRatios": [
-              "1:1"
-            ]
-          }
-        }
-      },
-      "userSelectable": true,
-      "catalogStatus": "catalog",
-      "discoveredByModelsTest": false,
-      "evidenceArtifact": null
-    },
-    {
       "id": "019e1d88-45c1-7d54-aa6b-ccd1c8cbb409",
       "organization": "arena",
       "provider": null,
@@ -13332,6 +13332,26 @@
       "evidenceArtifact": null
     },
     {
+      "id": "019e716b-0c56-71f1-b744-866b07e73040",
+      "organization": "anthropic",
+      "provider": "anthropicSearch",
+      "publicName": "claude-opus-4-8-search",
+      "name": "claude-opus-4-8-search",
+      "displayName": "claude-opus-4-8-search",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "search": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "catalog",
+      "discoveredByModelsTest": false,
+      "evidenceArtifact": null
+    },
+    {
       "id": "019da20e-0d8e-718a-9187-a3fa69de67fd",
       "organization": "arena",
       "provider": null,
@@ -13427,26 +13447,6 @@
         }
       },
       "userSelectable": true,
-      "catalogStatus": "catalog",
-      "discoveredByModelsTest": false,
-      "evidenceArtifact": null
-    },
-    {
-      "id": "019e716b-0c56-71f1-b744-866b07e73040",
-      "organization": "anthropic",
-      "provider": "anthropicSearch",
-      "publicName": "claude-opus-4-8-search",
-      "name": "claude-opus-4-8-search",
-      "displayName": "claude-opus-4-8-search",
-      "capabilities": {
-        "inputCapabilities": {
-          "text": true
-        },
-        "outputCapabilities": {
-          "search": true
-        }
-      },
-      "userSelectable": false,
       "catalogStatus": "catalog",
       "discoveredByModelsTest": false,
       "evidenceArtifact": null

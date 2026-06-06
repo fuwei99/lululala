@@ -445,6 +445,22 @@
             }
         }
     },
+    "p-image": {
+        "apiModelName": "p-image",
+        "provider": "pruna",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true
+            },
+            "outputCapabilities": {
+                "image": {
+                    "aspectRatios": [
+                        "1:1"
+                    ]
+                }
+            }
+        }
+    },
     "gemini-3.5-flash": {
         "apiModelName": "gemini-3.5-flash",
         "provider": "googleVertexGlobalWithThoughtSignatures",
@@ -546,6 +562,20 @@
             },
             "outputCapabilities": {
                 "text": true
+            }
+        }
+    },
+    "openai/gpt-5.4-image-2": {
+        "apiModelName": "openai/gpt-5.4-image-2",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true,
+                "image": false
             }
         }
     },
