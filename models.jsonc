@@ -25,6 +25,19 @@
             }
         }
     },
+    "kindle-alpha": {
+        "apiModelName": "kindle-alpha",
+        "provider": "openaiResponsesWithPhase",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
     "gpt-5.5": {
         "apiModelName": "gpt-5.5",
         "provider": "openaiResponses",
