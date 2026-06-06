@@ -113,7 +113,15 @@ export function buildArenaBody({ model, prompt, request }) {
         : undefined;
   if (reasoningEffort !== undefined) inferenceSettings.reasoningEffort = reasoningEffort;
 
-  const temperature = numberParam(request.temperature);
+  const provider = model.modelsTestProvider || model.provider;
+  const isClaude47or48 = /4[-.]7|4[-.]8/.test(
+    String(model.id || "") + " " + String(model.apiModelName || "")
+  );
+
+  let temperature = numberParam(request.temperature);
+  if (isClaude47or48) {
+    temperature = 1;
+  }
   if (temperature !== undefined) inferenceSettings.temperature = temperature;
 
   const topP = numberParam(request.top_p);
@@ -127,13 +135,32 @@ export function buildArenaBody({ model, prompt, request }) {
     };
   }
 
+  if (provider === "openrouter") {
+    const reasoningConfig = { exclude: true };
+    if (reasoningEffort !== undefined) {
+      reasoningConfig.effort = reasoningEffort;
+    }
+    inferenceSettings.reasoning = reasoningConfig;
+  }
+
   const body = {
     prompt,
     apiModelName: model.modelsTestApiModelName || model.apiModelName,
-    provider: model.modelsTestProvider || model.provider,
+    provider,
     capabilities: model.capabilities,
     ...objectParam(request.arena_extra_body),
   };
+
+  const clientThinking = request.thinking;
+  if (clientThinking && typeof clientThinking === "object" && !Array.isArray(clientThinking)) {
+    body.thinking = clientThinking;
+  } else if (provider === "deepseek" || provider === "deepseekToolCalling") {
+    if (reasoningEffort !== undefined) {
+      body.thinking = {
+        type: reasoningEffort === "none" ? "disabled" : "enabled",
+      };
+    }
+  }
 
   if (Object.keys(inferenceSettings).length > 0) body.inferenceSettings = inferenceSettings;
   return body;
