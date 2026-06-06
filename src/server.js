@@ -20,7 +20,6 @@ import { applyLatencyHint, formatMessagesAsClaudePrompt, formatMessagesAsStructu
 import {
   preprocessHistoryMessages,
   injectToolsIntoMessages,
-  appendToolCallReminder,
   hasUnclosedToolCalls,
   parseAllToolCalls,
   stripToolCalls
@@ -313,11 +312,10 @@ async function handleChatCompletions(req, res) {
 
     const preprocessedMessages = preprocessHistoryMessages(request.messages, isClaude);
     const messagesWithTools = injectToolsIntoMessages(preprocessedMessages, request.tools);
-    const finalMessages = appendToolCallReminder(messagesWithTools, request.tools);
 
     const basePrompt = isClaude
-      ? formatMessagesAsClaudePrompt(finalMessages)
-      : formatMessagesAsStructuredPrompt(finalMessages);
+      ? formatMessagesAsClaudePrompt(messagesWithTools)
+      : formatMessagesAsStructuredPrompt(messagesWithTools);
     const latencyHintEnabled = LATENCY_HINT && request.arena_latency_hint !== false;
     const prompt = latencyHintEnabled ? applyLatencyHint(basePrompt, LATENCY_HINT_TEXT, isClaude) : basePrompt;
 
