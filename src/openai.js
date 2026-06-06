@@ -398,7 +398,7 @@ async function streamOneArenaRound({
   if (buffer.trim()) handleLine(buffer);
   if (!overlapResolved) flushPendingOverlap();
   if (transformer) {
-    transformer.flush({ isFinal: false });
+    transformer.flush();
   }
   markerFilter.flush();
   if (parsed.content.includes(CONTINUATION_MARKER)) {
@@ -551,7 +551,6 @@ export async function streamArenaAsOpenAI({
         }),
       };
     }
-    transformer.flush({ isFinal: true });
   } catch (error) {
     if (isAbortError(error) || signal?.aborted || !responseWritable(httpResponse)) {
       clientDisconnectedEarly = true;
