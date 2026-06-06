@@ -13,7 +13,7 @@ import {
 import { buildArenaBody, isAbortError, runArenaModelsTestWithContinuations } from "./arena.js";
 import { readFileSync } from "node:fs";
 import { makeChatCompletion, streamArenaAsOpenAI } from "./openai.js";
-import { applyLatencyHint, formatMessagesAsStructuredPrompt } from "./roles.js";
+import { applyLatencyHint, formatMessagesAsClaudePrompt, formatMessagesAsStructuredPrompt } from "./roles.js";
 
 function loadModelsConfig() {
   try {
@@ -242,9 +242,15 @@ async function handleChatCompletions(req, res) {
   };
   logRequestSummary(request, model);
 
-  const basePrompt = formatMessagesAsStructuredPrompt(request.messages);
+  const isClaude = request.model.toLowerCase().includes("claude") || 
+                   (model.apiModelName && model.apiModelName.toLowerCase().includes("claude")) || 
+                   model.provider === "anthropic";
+
+  const basePrompt = isClaude
+    ? formatMessagesAsClaudePrompt(request.messages)
+    : formatMessagesAsStructuredPrompt(request.messages);
   const latencyHintEnabled = LATENCY_HINT && request.arena_latency_hint !== false;
-  const prompt = latencyHintEnabled ? applyLatencyHint(basePrompt, LATENCY_HINT_TEXT) : basePrompt;
+  const prompt = latencyHintEnabled ? applyLatencyHint(basePrompt, LATENCY_HINT_TEXT, isClaude) : basePrompt;
   const arenaBody = buildArenaBody({ model, prompt, request });
   const modelsTestProvider = model.modelsTestProvider || model.provider;
   const openaiModelId = `${modelsTestProvider}/${model.modelsTestApiModelName || model.apiModelName}`;

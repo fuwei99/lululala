@@ -20,13 +20,46 @@ function normalizeRole(role) {
   return "user";
 }
 
-export function applyLatencyHint(prompt, hintText) {
+export function applyLatencyHint(prompt, hintText, isClaude = false) {
   if (!hintText || typeof hintText !== "string") return prompt;
+  if (isClaude) {
+    return `${prompt}\n\n[System Note: ${hintText.trim()}]`;
+  }
   return [
     "<<<SYSTEM>>>\n" + hintText.trim() + "\n<<<END_SYSTEM>>>",
     "",
     prompt,
   ].join("\n");
+}
+
+export function formatMessagesAsClaudePrompt(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    throw new Error("messages must be a non-empty array");
+  }
+
+  if (
+    messages.length === 1 &&
+    normalizeRole(messages[0]?.role) === "user" &&
+    !messages[0]?.name &&
+    !messages[0]?.tool_call_id
+  ) {
+    return contentToText(messages[0].content);
+  }
+
+  const promptParts = [];
+  for (const msg of messages) {
+    const role = normalizeRole(msg.role);
+    const content = contentToText(msg.content);
+    if (role === "system") {
+      promptParts.push(`\bSystem: ${content}`);
+    } else if (role === "user") {
+      promptParts.push(`\bHuman: ${content}`);
+    } else if (role === "assistant") {
+      promptParts.push(`\bAssistant: ${content}`);
+    }
+  }
+
+  return [...promptParts, "\bAssistant:"].join("\n\n");
 }
 
 export function formatMessagesAsStructuredPrompt(messages) {
@@ -58,3 +91,4 @@ export function formatMessagesAsStructuredPrompt(messages) {
 
   return [header, ...blocks, "<<<ASSISTANT>>>"].join("\n\n");
 }
+
