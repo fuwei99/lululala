@@ -16,21 +16,26 @@ export function formatToolsToSystemPrompt(tools) {
   }
 
   return [
-    "### [CRITICAL] TOOL CALLING INSTRUCTIONS",
+    "### [CRITICAL] TOOL CALLING PROTOCOL",
     "",
-    "If you want to call a tool, you MUST output an XML block wrapped in <tool_call> and </tool_call> tags.",
-    "DO NOT output any other XML tags except below or markdown tag (eg:```xml) for tool calls.",
+    "If you decide to call one or more tools, you MUST wrap all tool calls inside a single `<tool_calls>` and `</tool_calls>` block.",
+    "You can make multiple tool calls (parallel calling) by listing multiple `<invoke>` blocks sequentially inside this single container.",
     "",
-    "IMPORTANT: For simple string parameters, place the raw text directly inside the tag (NO escape needed). However, if a parameter expects an Array or Object, you MUST output valid JSON format inside the tag.",
+    "CRITICAL RULES:",
+    "1. Once you output the closing `</tool_calls>` tag, you MUST immediately STOP generating any further text, explanations, or conversational responses. Do not write anything after </tool_calls>.",
+    "2. If you need to make multiple tool calls, they MUST be grouped together inside a SINGLE `<tool_calls>` block. DO NOT output multiple separate `<tool_calls>` blocks.",
+    "3. DO NOT output any conversational text or explanation inside the `<tool_calls>` block, or between individual `<invoke>` blocks.",
+    "4. For simple string parameters, place the raw text directly inside the `<parameter>` tag and set `string=\"true\"`. For all other types (numbers, booleans, arrays, objects), pass the value in JSON format and set `string=\"false\"`.",
     "",
     "Format:",
-    "<tool_call>",
-    "  <tool name=\"tool_name\">",
-    "    <arguments>",
-    "      <arg_name>value</arg_name>",
-    "    </arguments>",
-    "  </tool>",
-    "</tool_call>",
+    "<tool_calls>",
+    "  <invoke name=\"tool_name_1\">",
+    "    <parameter name=\"param_name_1\" string=\"true\">value_1</parameter>",
+    "  </invoke>",
+    "  <invoke name=\"tool_name_2\">",
+    "    <parameter name=\"param_name_a\" string=\"false\">[\"item_1\", \"item_2\"]</parameter>",
+    "  </invoke>",
+    "</tool_calls>",
     "",
     "### AVAILABLE TOOLS",
     "",
@@ -43,30 +48,32 @@ export function formatToolsToSystemPrompt(tools) {
  */
 export function toolCallsToXml(toolCalls) {
   if (!Array.isArray(toolCalls) || toolCalls.length === 0) return "";
-  let xml = "";
+  let xml = "<tool_calls>\n";
   for (const tc of toolCalls) {
     if (tc.type !== "function" || !tc.function) continue;
     const name = tc.function.name;
-    let argsXml = "";
+    xml += `  <invoke name="${name}">\n`;
     try {
       const args = typeof tc.function.arguments === "string" 
         ? JSON.parse(tc.function.arguments) 
         : tc.function.arguments;
       if (args && typeof args === "object") {
         for (const [key, val] of Object.entries(args)) {
-          if (val && (typeof val === "object" || Array.isArray(val))) {
-            argsXml += `      <${key}>${JSON.stringify(val)}</${key}>\n`;
+          if (typeof val === "string") {
+            xml += `    <parameter name="${key}" string="true">${val}</parameter>\n`;
           } else {
-            argsXml += `      <${key}>${val !== undefined ? val : ""}</${key}>\n`;
+            xml += `    <parameter name="${key}" string="false">${JSON.stringify(val)}</parameter>\n`;
           }
         }
       }
     } catch (e) {
-      argsXml += `      <raw_args>${tc.function.arguments}</raw_args>\n`;
+      xml += `    <!-- Error parsing arguments, outputting raw: -->\n`;
+      xml += `    <parameter name="raw_arguments" string="true">${tc.function.arguments}</parameter>\n`;
     }
-    xml += `<tool_call>\n  <tool name="${name}">\n    <arguments>\n${argsXml}    </arguments>\n  </tool>\n</tool_call>\n`;
+    xml += `  </invoke>\n`;
   }
-  return xml.trim();
+  xml += "</tool_calls>";
+  return xml;
 }
 
 /**
@@ -141,13 +148,11 @@ export function appendToolCallReminder(messages, tools) {
   const reminder = [
     "",
     "[TOOLCALL_FORMAT_REMINDER]:",
-    "<tool_call>",
-    "  <tool name=\"tool_name\">",
-    "    <arguments>",
-    "      <param_name>value</param_name>",
-    "    </arguments>",
-    "  </tool>",
-    "</tool_call>"
+    "<tool_calls>",
+    "  <invoke name=\"tool_name\">",
+    "    <parameter name=\"param_name\" string=\"true\">value</parameter>",
+    "  </invoke>",
+    "</tool_calls>"
   ].join("\n");
   
   const newMessages = [...messages];
@@ -159,91 +164,67 @@ export function appendToolCallReminder(messages, tools) {
 }
 
 /**
- * Single XML tool call parser with truncation/missing closing tags fallback.
+ * Parse XML tool calls in `<tool_calls>` format.
+ * Matches `<invoke name="...">...</invoke>` and `<parameter name="..." string="true|false">...</parameter>`
+ * using robust regex with positive lookaheads for missing closing tags.
  */
-export function parseToolCallAny(text) {
-  if (!text) return null;
-  
-  let name = null;
-  const nameMatch1 = text.match(/<name>([\s\S]*?)<\/name>/i);
-  if (nameMatch1) {
-    name = nameMatch1[1].trim();
-  } else {
-    const nameMatch2 = text.match(/<(?:tool|tool_call)\s+name=["']([^"']+)["']/i);
-    if (nameMatch2) {
-      name = nameMatch2[1].trim();
-    }
-  }
-  
-  if (!name) return null;
-  
-  const args = {};
-  const argsSection = text.match(/<arguments>([\s\S]*?)<\/arguments>/i);
-  const contentToSearch = argsSection ? argsSection[1] : text;
-  
-  // Tag matcher with lookahead fallback for missing closing tags
-  const tagPattern = /<([^>/\s]+)>([\s\S]*?)(?:<\/\1>|(?=<\/arguments>)|(?=<\/tool_call>)|(?=<\/tool>)|$)/gi;
-  
-  let match;
-  tagPattern.lastIndex = 0;
-  
-  while ((match = tagPattern.exec(contentToSearch)) !== null) {
-    const tag = match[1];
-    const val = match[2];
-    
-    if (["name", "arguments", "tool_call", "tool"].includes(tag.toLowerCase())) {
-      continue;
-    }
-    
-    const valStripped = val.trim();
-    if (
-      (valStripped.startsWith("{") && valStripped.endsWith("}")) ||
-      (valStripped.startsWith("[") && valStripped.endsWith("]"))
-    ) {
-      try {
-        args[tag] = JSON.parse(valStripped);
-      } catch (e) {
-        args[tag] = valStripped;
-      }
-    } else {
-      args[tag] = valStripped;
-    }
-  }
-  
-  return { name, arguments: args };
-}
-
-/**
- * Parse all tool calls present in the text content.
- */
-export function parseAllToolCalls(text) {
+export function parseXmlToolCalls(text) {
   if (!text) return [];
-  
-  const toolCallBlocks = [];
-  const regex = /<tool_call>([\s\S]*?)(?:<\/tool_call>|$)/gi;
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    const blockContent = match[1].trim();
-    if (blockContent) {
-      toolCallBlocks.push(blockContent);
-    }
-  }
-  
-  if (toolCallBlocks.length === 0) {
-    if (/<tool\s+name=/i.test(text)) {
-      toolCallBlocks.push(text);
-    }
-  }
-  
   const results = [];
-  for (const block of toolCallBlocks) {
-    const parsed = parseToolCallAny(block);
-    if (parsed) {
-      results.push(parsed);
+  
+  const invokePattern = /<invoke\s+name=["']([^"']+)["']\s*\/?>([\s\S]*?)(?:<\/invoke>|(?=<invoke\s+name=)|(?=<\/tool_calls>)|$)/gi;
+  const paramPattern = /<parameter\s+name=["']([^"']+)["']\s+string=["'](true|false)["']\s*\/?>([\s\S]*?)(?:<\/parameter>|(?=<parameter\s+name=)|(?=<invoke\s+name=)|(?=<\/tool_calls>)|$)/gi;
+
+  let invokeMatch;
+  invokePattern.lastIndex = 0;
+
+  while ((invokeMatch = invokePattern.exec(text)) !== null) {
+    const name = invokeMatch[1].trim();
+    const isSelfClosing = invokeMatch[0].trim().endsWith("/>");
+    const invokeContent = isSelfClosing ? "" : invokeMatch[2];
+    
+    const args = {};
+    let paramMatch;
+    paramPattern.lastIndex = 0;
+    
+    while ((paramMatch = paramPattern.exec(invokeContent)) !== null) {
+      const pName = paramMatch[1].trim();
+      const isString = paramMatch[2].toLowerCase() === "true";
+      const isParamSelfClosing = paramMatch[0].trim().endsWith("/>");
+      const pVal = isParamSelfClosing ? "" : paramMatch[3].trim();
+      
+      if (isString) {
+        args[pName] = pVal;
+      } else {
+        try {
+          args[pName] = JSON.parse(pVal);
+        } catch (e) {
+          if (pVal === "true") args[pName] = true;
+          else if (pVal === "false") args[pName] = false;
+          else if (!isNaN(pVal) && pVal !== "") args[pName] = Number(pVal);
+          else args[pName] = pVal;
+        }
+      }
+    }
+    
+    if (name) {
+      results.push({ name, arguments: args });
     }
   }
   
   return results;
+}
+
+export function parseToolCallAny(text) {
+  const parsed = parseXmlToolCalls(text);
+  return parsed.length > 0 ? parsed[0] : null;
+}
+
+export function parseAllToolCalls(text) {
+  if (!text) return [];
+  const containerMatch = /<tool_calls>([\s\S]*?)(?:<\/tool_calls>|$)/i.exec(text);
+  const contentToSearch = containerMatch ? containerMatch[1] : text;
+  return parseXmlToolCalls(contentToSearch);
 }
 
 /**
@@ -251,11 +232,12 @@ export function parseAllToolCalls(text) {
  */
 export function stripToolCalls(text) {
   if (!text) return "";
-  return text.replace(/<tool_call>[\s\S]*?(?:<\/tool_call>|$)/gi, "").trim();
+  return text.replace(/<tool_calls>[\s\S]*?(?:<\/tool_calls>|$)/gi, "").trim();
 }
 
 /**
  * Stateful XML to standard OpenAI Tool Call stream transformer.
+ * Implements stream interception, buffering, and auto-truncation on end tag.
  */
 export class XmlToolCallStreamTransformer {
   constructor({ tools, onContent, onToolCall }) {
@@ -264,63 +246,34 @@ export class XmlToolCallStreamTransformer {
     this.onToolCall = onToolCall;
     
     this.buffer = "";
-    this.inToolCall = false;
-    this.toolCallId = null;
-    this.toolName = null;
-    this.emittedName = false;
-    
-    this.inArguments = false;
-    this.emittedArgumentsStart = false;
-    this.currentParam = null;
-    this.currentParamType = "string";
-    this.emittedParamName = false;
-    this.emittedParamQuote = false;
-    this.paramCount = 0;
-    
+    this.inToolCalls = false;
+    this.toolCallsBuffer = "";
+    this.toolCallsParsed = false;
     this.toolCallIndex = 0;
   }
   
-  getParamType(toolName, paramName) {
-    const tool = this.tools.find(t => t.function?.name === toolName);
-    if (!tool) return "string";
-    const params = tool.function?.parameters;
-    if (!params || !params.properties) return "string";
-    const prop = params.properties[paramName];
-    if (!prop) return "string";
-    return prop.type || "string";
-  }
-
-  isValidParam(toolName, paramName) {
-    if (!toolName) return false;
-    const tool = this.tools.find(t => t.function?.name === toolName);
-    if (!tool) return false;
-    const params = tool.function?.parameters;
-    if (!params || !params.properties) return false;
-    const keys = Object.keys(params.properties).map(k => k.toLowerCase());
-    return keys.includes(paramName.toLowerCase());
-  }
-
   write(chunk) {
-    this.buffer += chunk;
+    if (this.toolCallsParsed) {
+      return;
+    }
     
-    for (;;) {
-      if (!this.inToolCall) {
-        const idx = this.buffer.indexOf("<tool_call>");
-        if (idx !== -1) {
-          const before = this.buffer.slice(0, idx);
-          if (before) this.onContent(before);
-          
-          this.inToolCall = true;
-          this.toolCallId = `call_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
-          this.buffer = this.buffer.slice(idx + "<tool_call>".length);
-          continue;
-        }
+    if (!this.inToolCalls) {
+      this.buffer += chunk;
+      
+      const idx = this.buffer.indexOf("<tool_calls>");
+      if (idx !== -1) {
+        const before = this.buffer.slice(0, idx);
+        if (before) this.onContent(before);
         
-        if (this.buffer.length > 10) {
+        this.inToolCalls = true;
+        this.toolCallsBuffer = this.buffer.slice(idx + "<tool_calls>".length);
+        this.buffer = "";
+      } else {
+        if (this.buffer.length > 12) {
           let partialMatch = false;
-          for (let i = 1; i < 11; i++) {
+          for (let i = 1; i < 12; i++) {
             const endSlice = this.buffer.slice(-i);
-            if ("<tool_call>".startsWith(endSlice)) {
+            if ("<tool_calls>".startsWith(endSlice)) {
               const before = this.buffer.slice(0, this.buffer.length - i);
               if (before) this.onContent(before);
               this.buffer = endSlice;
@@ -333,223 +286,50 @@ export class XmlToolCallStreamTransformer {
             this.buffer = "";
           }
         }
-        break;
-      } else {
-        const tagMatch = this.buffer.match(/<([^>]+)>/);
-        if (!tagMatch) {
-          if (this.inArguments && this.currentParam && this.emittedParamName) {
-            const startIdx = this.buffer.indexOf("<");
-            let textToEmit = "";
-            if (startIdx !== -1) {
-              textToEmit = this.buffer.slice(0, startIdx);
-              this.buffer = this.buffer.slice(startIdx);
-            } else {
-              textToEmit = this.buffer;
-              this.buffer = "";
-            }
-            
-            if (textToEmit) {
-              if (this.currentParamType === "string" && !this.emittedParamQuote) {
-                this.onToolCall({
-                  index: this.toolCallIndex,
-                  id: this.toolCallId,
-                  argumentsChunk: `"`
-                });
-                this.emittedParamQuote = true;
-              }
-              this.onToolCall({
-                index: this.toolCallIndex,
-                id: this.toolCallId,
-                argumentsChunk: textToEmit
-              });
-            }
-          }
-          break;
-        }
+      }
+    } else {
+      this.toolCallsBuffer += chunk;
+      
+      const endIdx = this.toolCallsBuffer.indexOf("</tool_calls>");
+      if (endIdx !== -1) {
+        const xmlContent = this.toolCallsBuffer.slice(0, endIdx);
+        this.parseAndEmit(xmlContent);
         
-        const tagContent = tagMatch[1];
-        const tagFull = tagMatch[0];
-        const tagIndex = tagMatch.index;
-        
-        const isClosing = tagContent.startsWith("/");
-        const tagName = (isClosing ? tagContent.slice(1) : tagContent.split(/\s+/)[0]).toLowerCase();
-        
-        // Determine if this is a genuine control/system/parameter tag rather than text.
-        const isControlTag = 
-          ["tool", "arguments", "name", "tool_call"].includes(tagName) ||
-          (this.inArguments && (
-            (!isClosing && this.isValidParam(this.toolName, tagName)) ||
-            (isClosing && tagName === this.currentParam?.toLowerCase())
-          ));
-        
-        if (!isControlTag) {
-          // If it's not a control tag, treat it as plain text (it could be nested HTML/XML inside the parameter value).
-          const textToEmit = this.buffer.slice(0, tagIndex + tagFull.length);
-          if (textToEmit && this.inArguments && this.currentParam && this.emittedParamName) {
-            if (this.currentParamType === "string" && !this.emittedParamQuote) {
-              this.onToolCall({
-                index: this.toolCallIndex,
-                id: this.toolCallId,
-                argumentsChunk: `"`
-              });
-              this.emittedParamQuote = true;
-            }
-            this.onToolCall({
-              index: this.toolCallIndex,
-              id: this.toolCallId,
-              argumentsChunk: textToEmit
-            });
-          }
-          this.buffer = this.buffer.slice(tagIndex + tagFull.length);
-          continue;
-        }
-        
-        const textBeforeTag = this.buffer.slice(0, tagIndex);
-        if (textBeforeTag && this.inArguments && this.currentParam && this.emittedParamName) {
-          if (this.currentParamType === "string" && !this.emittedParamQuote) {
-            this.onToolCall({
-              index: this.toolCallIndex,
-              id: this.toolCallId,
-              argumentsChunk: `"`
-            });
-            this.emittedParamQuote = true;
-          }
-          this.onToolCall({
-            index: this.toolCallIndex,
-            id: this.toolCallId,
-            argumentsChunk: textBeforeTag
-          });
-        }
-        
-        this.buffer = this.buffer.slice(tagIndex + tagFull.length);
-        
-        if (!isClosing) {
-          if (tagName === "tool") {
-            const nameMatch = tagContent.match(/name=["']([^"']+)["']/i);
-            if (nameMatch) {
-              this.toolName = nameMatch[1];
-              this.onToolCall({
-                index: this.toolCallIndex,
-                id: this.toolCallId,
-                name: this.toolName
-              });
-              this.emittedName = true;
-            }
-          } else if (tagName === "name" && !this.emittedName) {
-            this.currentParam = "name_tag";
-          } else if (tagName === "arguments") {
-            this.inArguments = true;
-            this.onToolCall({
-              index: this.toolCallIndex,
-              id: this.toolCallId,
-              argumentsChunk: "{"
-            });
-            this.emittedArgumentsStart = true;
-          } else if (this.inArguments) {
-            this.currentParam = tagContent;
-            this.currentParamType = this.getParamType(this.toolName, this.currentParam);
-            this.emittedParamName = false;
-            this.emittedParamQuote = false;
-            
-            let prefix = this.paramCount > 0 ? ", " : "";
-            prefix += `"${this.currentParam}": `;
-            
-            this.onToolCall({
-              index: this.toolCallIndex,
-              id: this.toolCallId,
-              argumentsChunk: prefix
-            });
-            this.emittedParamName = true;
-            this.paramCount++;
-          }
-        } else {
-          if (tagName === "tool_call") {
-            if (this.inArguments && this.emittedArgumentsStart) {
-              this.onToolCall({
-                index: this.toolCallIndex,
-                id: this.toolCallId,
-                argumentsChunk: "}"
-              });
-            }
-            this.inToolCall = false;
-            this.toolCallIndex++;
-            this.toolName = null;
-            this.emittedName = false;
-            this.inArguments = false;
-            this.emittedArgumentsStart = false;
-            this.currentParam = null;
-            this.paramCount = 0;
-          } else if (tagName === "arguments") {
-            if (this.emittedArgumentsStart) {
-              this.onToolCall({
-                index: this.toolCallIndex,
-                id: this.toolCallId,
-                argumentsChunk: "}"
-              });
-              this.emittedArgumentsStart = false;
-            }
-            this.inArguments = false;
-          } else if (tagName === "tool") {
-            // Do nothing
-          } else if (this.inArguments && tagName === this.currentParam?.toLowerCase()) {
-            if (this.currentParamType === "string" && this.emittedParamQuote) {
-              this.onToolCall({
-                index: this.toolCallIndex,
-                id: this.toolCallId,
-                argumentsChunk: `"`
-              });
-            }
-            this.currentParam = null;
-          } else if (tagName === "name" && this.currentParam === "name_tag") {
-            if (textBeforeTag) {
-              this.toolName = textBeforeTag.trim();
-              this.onToolCall({
-                index: this.toolCallIndex,
-                id: this.toolCallId,
-                name: this.toolName
-              });
-              this.emittedName = true;
-            }
-            this.currentParam = null;
-          }
-        }
+        this.inToolCalls = false;
+        this.toolCallsParsed = true;
+        this.toolCallsBuffer = "";
       }
     }
   }
   
+  parseAndEmit(xmlContent) {
+    const parsedCalls = parseXmlToolCalls(xmlContent);
+    for (const call of parsedCalls) {
+      const toolCallId = `call_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
+      this.onToolCall({
+        index: this.toolCallIndex,
+        id: toolCallId,
+        name: call.name,
+      });
+      this.onToolCall({
+        index: this.toolCallIndex,
+        id: toolCallId,
+        argumentsChunk: JSON.stringify(call.arguments),
+      });
+      this.toolCallIndex++;
+    }
+  }
+  
   flush() {
-    if (this.inToolCall) {
-      if (this.inArguments && this.currentParam && this.emittedParamName) {
-        if (this.currentParamType === "string" && !this.emittedParamQuote) {
-          this.onToolCall({
-            index: this.toolCallIndex,
-            id: this.toolCallId,
-            argumentsChunk: `"`
-          });
-          this.emittedParamQuote = true;
-        }
-        if (this.buffer) {
-          this.onToolCall({
-            index: this.toolCallIndex,
-            id: this.toolCallId,
-            argumentsChunk: this.buffer
-          });
-        }
-        if (this.currentParamType === "string" && this.emittedParamQuote) {
-          this.onToolCall({
-            index: this.toolCallIndex,
-            id: this.toolCallId,
-            argumentsChunk: `"`
-          });
-        }
-      }
-      if (this.emittedArgumentsStart) {
-        this.onToolCall({
-          index: this.toolCallIndex,
-          id: this.toolCallId,
-          argumentsChunk: "}"
-        });
-      }
+    if (this.toolCallsParsed) {
+      return;
+    }
+    
+    if (this.inToolCalls) {
+      this.parseAndEmit(this.toolCallsBuffer);
+      this.inToolCalls = false;
+      this.toolCallsParsed = true;
+      this.toolCallsBuffer = "";
     } else {
       if (this.buffer) {
         this.onContent(this.buffer);
