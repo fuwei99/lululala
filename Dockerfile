@@ -14,7 +14,7 @@ COPY package.json package-lock.json* ./
 RUN npm install --omit=dev
 
 # Copy models metadata and the application source code
-COPY models.json ./
+COPY models.json models.jsonc ./
 COPY src/ ./src/
 
 # Expose the default port configured in config.js (LMARENA_PORT defaults to 8787)
