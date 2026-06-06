@@ -128,26 +128,74 @@ function checkClientAuth(req) {
   return auth === `Bearer ${API_KEY}`;
 }
 
-function logRequestSummary(request, model) {
-  const rawMaxTokens = request.max_tokens ?? request.max_completion_tokens;
-  const ignoredMaxTokens =
-    typeof rawMaxTokens === "number" && Number.isInteger(rawMaxTokens) && rawMaxTokens < 16;
-  const roles = Array.isArray(request.messages)
-    ? request.messages.map((m) => m?.role || "unknown")
-    : [];
-  console.log(
-    JSON.stringify({
-      event: "chat_request",
-      model: request.model,
-      resolved_model: `${model.provider}/${model.apiModelName}`,
-      models_test_model: `${model.modelsTestProvider || model.provider}/${model.modelsTestApiModelName || model.apiModelName}`,
-      stream: request.stream === true,
-      message_count: Array.isArray(request.messages) ? request.messages.length : 0,
-      roles,
-      max_tokens: rawMaxTokens ?? null,
-      ignored_invalid_low_max_tokens: ignoredMaxTokens,
-    }),
-  );
+function logReceivedRequest(path, request, model, prompt) {
+  const input_len = prompt ? prompt.length : 0;
+  const modelId = request.model || model?.id || "unknown";
+  const stream = request.stream === true;
+
+  if (path === "/v1/images/generations") {
+    console.log(`[Received] POST /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars`);
+    return;
+  }
+
+  // Chat completions logging
+  const reasoning_effort = request.reasoning_effort ?? request.reasoning?.effort;
+  const thinking = request.thinking;
+  const provider = model?.modelsTestProvider || model?.provider;
+
+  const log_parts = [
+    `[Received] POST /v1/chat/completions`,
+    `Model: ${modelId}`,
+    `Stream: ${stream}`,
+    `Input: ${input_len} chars`
+  ];
+
+  if (reasoning_effort !== undefined && reasoning_effort !== null) {
+    log_parts.push(`Effort: ${reasoning_effort}`);
+  }
+
+  if (thinking && typeof thinking === "object" && !Array.isArray(thinking)) {
+    log_parts.push(`Thinking: ${thinking.type}`);
+  } else if (provider === "deepseek" || provider === "deepseekToolCalling") {
+    if (reasoning_effort === "none") {
+      log_parts.push("Thinking: disabled");
+    } else if (reasoning_effort !== undefined && reasoning_effort !== null) {
+      log_parts.push("Thinking: enabled");
+    }
+  }
+
+  const google_thinking = request.google_thinking;
+  if (google_thinking && typeof google_thinking === "object" && !Array.isArray(google_thinking)) {
+    if (google_thinking.thinking_budget !== undefined && google_thinking.thinking_budget !== null) {
+      log_parts.push(`GoogleThinkingBudget: ${google_thinking.thinking_budget}`);
+    }
+  }
+
+  console.log(log_parts.join(" | "));
+}
+
+function logResponse(path, request, modelId, prompt, status, { outputChars = 0, error = null, earlyDisconnect = false } = {}) {
+  const input_len = prompt ? prompt.length : 0;
+  const stream = request?.stream === true;
+
+  if (path === "/v1/images/generations") {
+    if (error) {
+      console.log(`[POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars | Status: ${status} | Error: ${error}`);
+    } else {
+      console.log(`[POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars | Status: ${status} | Output: Image`);
+    }
+    return;
+  }
+
+  if (path === "/v1/chat/completions") {
+    if (stream) {
+      const statusText = earlyDisconnect ? "200 (Client disconnected early)" : String(status);
+      console.log(`[POST] /v1/chat/completions | Model: ${modelId} | Stream: True | Input: ${input_len} chars | Status: ${statusText} | Output: ${outputChars} chars`);
+    } else {
+      console.log(`[POST] /v1/chat/completions | Model: ${modelId} | Stream: False | Input: ${input_len} chars | Status: ${status} | Output: ${outputChars} chars`);
+    }
+    return;
+  }
 }
 
 function stringifyError(error) {
@@ -212,6 +260,7 @@ async function handleModels(req, res) {
       max_continuations: MAX_CONTINUATIONS,
     },
   });
+  console.log("[GET] /v1/models | Status: 200");
 }
 
 async function handleChatCompletions(req, res) {
@@ -227,144 +276,158 @@ async function handleChatCompletions(req, res) {
 
   const client = attachClientAbortSignal(req, res);
   try {
-  const request = await readJson(req);
-  if (client.signal.aborted) return;
-  const modelsConfig = loadModelsConfig();
-  const rawModel = modelsConfig[request.model];
-  if (!rawModel) {
-    sendJson(res, 400, {
-      error: {
-        message: `Unsupported model: ${request.model}. Supported: ${Object.keys(modelsConfig).join(", ")}`,
-        type: "unsupported_model",
-      },
-    });
-    client.markFinished();
-    return;
-  }
-  const model = {
-    ...rawModel,
-    id: request.model,
-    inputCapabilities: Object.keys(rawModel.capabilities?.inputCapabilities || {}).sort(),
-    outputCapabilities: Object.keys(rawModel.capabilities?.outputCapabilities || {}).sort(),
-  };
-  logRequestSummary(request, model);
+    let request;
+    try {
+      request = await readJson(req);
+    } catch (e) {
+      sendJson(res, 400, { error: { message: `Invalid JSON: ${e.message}`, type: "invalid_request_error" } });
+      console.log(`[POST] /v1/chat/completions | Status: 400 | Error: Invalid JSON`);
+      client.markFinished();
+      return;
+    }
+    if (client.signal.aborted) return;
+    const modelsConfig = loadModelsConfig();
+    const rawModel = modelsConfig[request.model];
+    if (!rawModel) {
+      sendJson(res, 400, {
+        error: {
+          message: `Unsupported model: ${request.model}. Supported: ${Object.keys(modelsConfig).join(", ")}`,
+          type: "unsupported_model",
+        },
+      });
+      console.log(`[POST] /v1/chat/completions | Model: ${request.model} | Status: 400 | Error: Unsupported model`);
+      client.markFinished();
+      return;
+    }
+    const model = {
+      ...rawModel,
+      id: request.model,
+      inputCapabilities: Object.keys(rawModel.capabilities?.inputCapabilities || {}).sort(),
+      outputCapabilities: Object.keys(rawModel.capabilities?.outputCapabilities || {}).sort(),
+    };
 
-  const isClaude = request.model.toLowerCase().includes("claude") || 
-                   (model.apiModelName && model.apiModelName.toLowerCase().includes("claude")) || 
-                   model.provider === "anthropic";
+    const isClaude = request.model.toLowerCase().includes("claude") || 
+                     (model.apiModelName && model.apiModelName.toLowerCase().includes("claude")) || 
+                     model.provider === "anthropic";
 
-  const basePrompt = isClaude
-    ? formatMessagesAsClaudePrompt(request.messages)
-    : formatMessagesAsStructuredPrompt(request.messages);
-  const latencyHintEnabled = LATENCY_HINT && request.arena_latency_hint !== false;
-  const prompt = latencyHintEnabled ? applyLatencyHint(basePrompt, LATENCY_HINT_TEXT, isClaude) : basePrompt;
-  const arenaBody = buildArenaBody({ model, prompt, request });
-  const modelsTestProvider = model.modelsTestProvider || model.provider;
-  const openaiModelId = `${modelsTestProvider}/${model.modelsTestApiModelName || model.apiModelName}`;
-  const diagnosis = diagnoseArenaError("BadRequestError", model);
-  const autoContinue = requestAutoContinue(request);
-  const maxContinuations = integerRequestParam(
-    request.arena_max_continuations ?? request.max_continuations,
-    MAX_CONTINUATIONS,
-  );
+    const basePrompt = isClaude
+      ? formatMessagesAsClaudePrompt(request.messages)
+      : formatMessagesAsStructuredPrompt(request.messages);
+    const latencyHintEnabled = LATENCY_HINT && request.arena_latency_hint !== false;
+    const prompt = latencyHintEnabled ? applyLatencyHint(basePrompt, LATENCY_HINT_TEXT, isClaude) : basePrompt;
 
-  if (request.stream) {
-    await streamArenaAsOpenAI({
-      arenaBody,
-      httpResponse: res,
-      model: openaiModelId,
-      diagnosis,
+    logReceivedRequest("/v1/chat/completions", request, model, prompt);
+
+    const arenaBody = buildArenaBody({ model, prompt, request });
+    const modelsTestProvider = model.modelsTestProvider || model.provider;
+    const openaiModelId = `${modelsTestProvider}/${model.modelsTestApiModelName || model.apiModelName}`;
+    const diagnosis = diagnoseArenaError("BadRequestError", model);
+    const autoContinue = requestAutoContinue(request);
+    const maxContinuations = integerRequestParam(
+      request.arena_max_continuations ?? request.max_continuations,
+      MAX_CONTINUATIONS,
+    );
+
+    if (request.stream) {
+      await streamArenaAsOpenAI({
+        arenaBody,
+        httpResponse: res,
+        model: openaiModelId,
+        clientModel: request.model,
+        diagnosis,
+        autoContinue,
+        maxContinuations,
+        contextChars: CONTINUATION_CONTEXT_CHARS,
+        signal: client.signal,
+      });
+      client.markFinished();
+      return;
+    }
+
+    const completed = await runArenaModelsTestWithContinuations({
+      body: arenaBody,
       autoContinue,
       maxContinuations,
       contextChars: CONTINUATION_CONTEXT_CHARS,
       signal: client.signal,
     });
-    client.markFinished();
-    return;
-  }
+    if (client.signal.aborted) return;
+    const lastRound = completed.rounds.at(-1);
+    if (completed.error) {
+      const upstreamError = stringifyError(completed.error);
+      const parsedDiagnosis = diagnoseArenaError(completed.error, model);
+      sendJson(res, 502, {
+        error: {
+          message: parsedDiagnosis ? `${upstreamError}: ${parsedDiagnosis}` : upstreamError,
+          type: "arena_provider_error",
+          arena_status: lastRound?.status ?? null,
+        },
+        arena_bridge: {
+          model: openaiModelId,
+          arena_model_id: model.id,
+          user_selectable: model.userSelectable !== false,
+          catalog_model_id: `${model.provider}/${model.apiModelName}`,
+          arena_models_test_selector: openaiModelId,
+          catalog_api_model_name: model.apiModelName,
+          arena_models_test_provider: modelsTestProvider,
+          arena_models_test_api_model_name: model.modelsTestApiModelName || model.apiModelName,
+          arena_models_test_default_inference_settings:
+            model.modelsTestDefaultInferenceSettings || null,
+          arena_models_test_inference_settings: arenaBody.inferenceSettings || null,
+          arena_models_test_alias_reason: model.modelsTestAliasReason || null,
+          output_capabilities: model.outputCapabilities,
+          upstream_error: upstreamError,
+          diagnosis: parsedDiagnosis,
+          auto_continue_enabled: autoContinue,
+          latency_hint_enabled: latencyHintEnabled,
+          max_continuations: maxContinuations,
+          continuation_count: completed.continuationCount,
+          continuation_exhausted: completed.continuationExhausted,
+          continuation_rounds: completed.rounds,
+        },
+      });
+      logResponse("/v1/chat/completions", request, request.model, prompt, 502, { error: upstreamError, outputChars: completed.content?.length || 0 });
+      client.markFinished();
+      return;
+    }
 
-  const completed = await runArenaModelsTestWithContinuations({
-    body: arenaBody,
-    autoContinue,
-    maxContinuations,
-    contextChars: CONTINUATION_CONTEXT_CHARS,
-    signal: client.signal,
-  });
-  if (client.signal.aborted) return;
-  const lastRound = completed.rounds.at(-1);
-  if (completed.error) {
-    const upstreamError = stringifyError(completed.error);
-    const parsedDiagnosis = diagnoseArenaError(completed.error, model);
-    sendJson(res, 502, {
-      error: {
-        message: parsedDiagnosis ? `${upstreamError}: ${parsedDiagnosis}` : upstreamError,
-        type: "arena_provider_error",
-        arena_status: lastRound?.status ?? null,
+    sendJson(
+      res,
+      200,
+      {
+        ...makeChatCompletion({
+          id: completed.messageId,
+          model: openaiModelId,
+          content: completed.content,
+          finishReason: completed.finishReason,
+          usage: completed.usage,
+        }),
+        arena_bridge: {
+          endpoint: "/nextjs-api/models/test",
+          arena_model_id: model.id,
+          provider: model.provider,
+          catalog_model_id: `${model.provider}/${model.apiModelName}`,
+          arena_models_test_selector: openaiModelId,
+          api_model_name: model.modelsTestApiModelName || model.apiModelName,
+          catalog_api_model_name: model.apiModelName,
+          arena_models_test_provider: modelsTestProvider,
+          arena_models_test_default_inference_settings:
+            model.modelsTestDefaultInferenceSettings || null,
+          arena_models_test_inference_settings: arenaBody.inferenceSettings || null,
+          arena_models_test_alias_reason: model.modelsTestAliasReason || null,
+          user_selectable: model.userSelectable !== false,
+          role_mapping: "structured_prompt_transcript",
+          auto_continue_enabled: autoContinue,
+          latency_hint_enabled: latencyHintEnabled,
+          max_continuations: maxContinuations,
+          continuation_count: completed.continuationCount,
+          continuation_exhausted: completed.continuationExhausted,
+          continuation_rounds: completed.rounds,
+        },
       },
-      arena_bridge: {
-        model: openaiModelId,
-        arena_model_id: model.id,
-        user_selectable: model.userSelectable !== false,
-        catalog_model_id: `${model.provider}/${model.apiModelName}`,
-        arena_models_test_selector: openaiModelId,
-        catalog_api_model_name: model.apiModelName,
-        arena_models_test_provider: modelsTestProvider,
-        arena_models_test_api_model_name: model.modelsTestApiModelName || model.apiModelName,
-        arena_models_test_default_inference_settings:
-          model.modelsTestDefaultInferenceSettings || null,
-        arena_models_test_inference_settings: arenaBody.inferenceSettings || null,
-        arena_models_test_alias_reason: model.modelsTestAliasReason || null,
-        output_capabilities: model.outputCapabilities,
-        upstream_error: upstreamError,
-        diagnosis: parsedDiagnosis,
-        auto_continue_enabled: autoContinue,
-        latency_hint_enabled: latencyHintEnabled,
-        max_continuations: maxContinuations,
-        continuation_count: completed.continuationCount,
-        continuation_exhausted: completed.continuationExhausted,
-        continuation_rounds: completed.rounds,
-      },
-    });
+    );
+    logResponse("/v1/chat/completions", request, request.model, prompt, 200, { outputChars: completed.content?.length || 0 });
     client.markFinished();
-    return;
-  }
-
-  sendJson(
-    res,
-    200,
-    {
-      ...makeChatCompletion({
-        id: completed.messageId,
-        model: openaiModelId,
-        content: completed.content,
-        finishReason: completed.finishReason,
-        usage: completed.usage,
-      }),
-      arena_bridge: {
-        endpoint: "/nextjs-api/models/test",
-        arena_model_id: model.id,
-        provider: model.provider,
-        catalog_model_id: `${model.provider}/${model.apiModelName}`,
-        arena_models_test_selector: openaiModelId,
-        api_model_name: model.modelsTestApiModelName || model.apiModelName,
-        catalog_api_model_name: model.apiModelName,
-        arena_models_test_provider: modelsTestProvider,
-        arena_models_test_default_inference_settings:
-          model.modelsTestDefaultInferenceSettings || null,
-        arena_models_test_inference_settings: arenaBody.inferenceSettings || null,
-        arena_models_test_alias_reason: model.modelsTestAliasReason || null,
-        user_selectable: model.userSelectable !== false,
-        role_mapping: "structured_prompt_transcript",
-        auto_continue_enabled: autoContinue,
-        latency_hint_enabled: latencyHintEnabled,
-        max_continuations: maxContinuations,
-        continuation_count: completed.continuationCount,
-        continuation_exhausted: completed.continuationExhausted,
-        continuation_rounds: completed.rounds,
-      },
-    },
-  );
-  client.markFinished();
   } catch (err) {
     if (client.signal.aborted || isAbortError(err)) return;
     throw err;
@@ -378,14 +441,17 @@ async function handleServeImage(req, res) {
   const filename = url.pathname.slice("/images/".length);
   if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
     sendJson(res, 400, { error: { message: "Bad request", type: "invalid_request_error" } });
+    console.log(`[GET] ${req.url} | Status: 400`);
     return;
   }
   const filePath = join(imgDir, filename);
   if (existsSync(filePath)) {
     res.writeHead(200, { "Content-Type": "image/png" });
     res.end(readFileSync(filePath));
+    console.log(`[GET] ${req.url} | Status: 200`);
   } else {
     sendJson(res, 404, { error: { message: "Not found", type: "not_found" } });
+    console.log(`[GET] ${req.url} | Status: 404`);
   }
 }
 
@@ -402,12 +468,21 @@ async function handleImagesGenerations(req, res) {
 
   const client = attachClientAbortSignal(req, res);
   try {
-    const request = await readJson(req);
+    let request;
+    try {
+      request = await readJson(req);
+    } catch (e) {
+      sendJson(res, 400, { error: { message: `Invalid JSON: ${e.message}`, type: "invalid_request_error" } });
+      console.log(`[POST] /v1/images/generations | Status: 400 | Error: Invalid JSON`);
+      client.markFinished();
+      return;
+    }
     if (client.signal.aborted) return;
 
     const prompt = request.prompt;
     if (!prompt) {
       sendJson(res, 400, { error: { message: "Missing prompt in request body", type: "invalid_request_error" } });
+      console.log(`[POST] /v1/images/generations | Model: ${request.model || "gpt-image-2"} | Status: 400 | Error: Missing prompt`);
       client.markFinished();
       return;
     }
@@ -434,6 +509,7 @@ async function handleImagesGenerations(req, res) {
           type: "unsupported_model",
         },
       });
+      console.log(`[POST] /v1/images/generations | Model: ${request.model} | Status: 400 | Error: Unsupported model`);
       client.markFinished();
       return;
     }
@@ -444,7 +520,7 @@ async function handleImagesGenerations(req, res) {
       inputCapabilities: Object.keys(rawModel.capabilities?.inputCapabilities || {}).sort(),
       outputCapabilities: Object.keys(rawModel.capabilities?.outputCapabilities || {}).sort(),
     };
-    logRequestSummary(request, model);
+    logReceivedRequest("/v1/images/generations", request, model, prompt);
 
     const arenaBody = buildArenaBody({ model, prompt, request });
     const completed = await runArenaModelsTestWithContinuations({
@@ -464,6 +540,7 @@ async function handleImagesGenerations(req, res) {
           type: "arena_upstream_fetch_error",
         },
       });
+      logResponse("/v1/images/generations", request, model.id, prompt, 500, { error: String(completed.error) });
       client.markFinished();
       return;
     }
@@ -475,6 +552,7 @@ async function handleImagesGenerations(req, res) {
           type: "arena_upstream_error",
         },
       });
+      logResponse("/v1/images/generations", request, model.id, prompt, 500, { error: "No image generated" });
       client.markFinished();
       return;
     }
@@ -501,6 +579,7 @@ async function handleImagesGenerations(req, res) {
             type: "internal_error",
           },
         });
+        logResponse("/v1/images/generations", request, model.id, prompt, 500, { error: `Save failed ${writeErr.message}` });
         client.markFinished();
         return;
       }
@@ -509,6 +588,7 @@ async function handleImagesGenerations(req, res) {
     }
 
     sendJson(res, 200, resObj);
+    logResponse("/v1/images/generations", request, model.id, prompt, 200);
     client.markFinished();
   } catch (err) {
     if (client.signal.aborted || isAbortError(err)) return;
@@ -522,6 +602,12 @@ async function router(req, res) {
   try {
     if (!checkClientAuth(req)) {
       sendJson(res, 401, { error: { message: "Unauthorized", type: "invalid_api_key" } });
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      if (req.method === "POST") {
+        console.log(`[POST] ${url.pathname} | Status: 401 | Error: Unauthorized`);
+      } else {
+        console.log(`[GET] ${url.pathname} | Status: 401`);
+      }
       return;
     }
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -553,6 +639,11 @@ async function router(req, res) {
       return;
     }
     sendJson(res, 404, { error: { message: "Not found", type: "not_found" } });
+    if (req.method === "POST") {
+      console.log(`[POST] ${url.pathname} | Status: 404 | Error: Path not found`);
+    } else {
+      console.log(`[GET] ${url.pathname} | Status: 404`);
+    }
   } catch (err) {
     if (isAbortError(err) || !responseWritable(res)) return;
     sendJson(res, 500, {
@@ -561,6 +652,12 @@ async function router(req, res) {
         type: "bridge_error",
       },
     });
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    if (req.method === "POST") {
+      console.log(`[POST] ${url.pathname} | Status: 500 | Error: ${err?.message || String(err)}`);
+    } else {
+      console.log(`[GET] ${url.pathname} | Status: 500`);
+    }
   }
 }
 

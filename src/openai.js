@@ -372,6 +372,7 @@ export async function streamArenaAsOpenAI({
   arenaBody,
   httpResponse,
   model,
+  clientModel = null,
   diagnosis = null,
   autoContinue = true,
   maxContinuations = 12,
@@ -394,6 +395,8 @@ export async function streamArenaAsOpenAI({
   let usage = null;
   let accumulatedContent = "";
   let continuationExhausted = false;
+  let clientDisconnectedEarly = false;
+  let hasError = false;
 
   if (!sse(httpResponse, {
     id: completionIdRef.value,
@@ -402,11 +405,15 @@ export async function streamArenaAsOpenAI({
     model,
     choices: [{ index: 0, delta: { role: "assistant" }, finish_reason: null }],
   })) {
+    clientDisconnectedEarly = true;
     return;
   }
 
   const heartbeat = setInterval(() => {
-    if (signal?.aborted || !writeRaw(httpResponse, ": keepalive\n\n")) clearInterval(heartbeat);
+    if (signal?.aborted || !writeRaw(httpResponse, ": keepalive\n\n")) {
+      clientDisconnectedEarly = true;
+      clearInterval(heartbeat);
+    }
   }, 15000);
   heartbeat.unref?.();
 
@@ -427,12 +434,16 @@ export async function streamArenaAsOpenAI({
         contextChars,
       });
 
-      if (result.aborted || signal?.aborted || !responseWritable(httpResponse)) return;
+      if (result.aborted || signal?.aborted || !responseWritable(httpResponse)) {
+        clientDisconnectedEarly = true;
+        return;
+      }
       accumulatedContent += result.emittedContent;
       usage = mergeUsage(usage, result.usage);
       finishReason = result.finishReason || finishReason;
 
       if (result.fatal || (result.error && !isTimeoutLikeError(result.error))) {
+        hasError = true;
         sse(httpResponse, {
           error: {
             message: String(result.error),
@@ -464,7 +475,11 @@ export async function streamArenaAsOpenAI({
       };
     }
   } catch (error) {
-    if (isAbortError(error) || signal?.aborted || !responseWritable(httpResponse)) return;
+    if (isAbortError(error) || signal?.aborted || !responseWritable(httpResponse)) {
+      clientDisconnectedEarly = true;
+      return;
+    }
+    hasError = true;
     sse(httpResponse, {
       error: {
         message: error?.message || String(error),
@@ -476,6 +491,16 @@ export async function streamArenaAsOpenAI({
     return;
   } finally {
     clearInterval(heartbeat);
+    const logModel = clientModel || model;
+    const inputLen = arenaBody.prompt ? arenaBody.prompt.length : 0;
+    const outputChars = accumulatedContent.length;
+    if (clientDisconnectedEarly || signal?.aborted || !responseWritable(httpResponse)) {
+      console.log(`[POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 200 (Client disconnected early) | Output: ${outputChars} chars`);
+    } else if (hasError) {
+      console.log(`[POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 500 | Output: ${outputChars} chars`);
+    } else {
+      console.log(`[POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 200 | Output: ${outputChars} chars`);
+    }
   }
 
   if (signal?.aborted || !responseWritable(httpResponse)) return;
