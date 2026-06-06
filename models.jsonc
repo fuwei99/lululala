@@ -298,6 +298,22 @@
             }
         }
     },
+    "gpt-image-1.5": {
+        "apiModelName": "gpt-image-1.5",
+        "provider": "customOpenai",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true
+            },
+            "outputCapabilities": {
+                "image": {
+                    "aspectRatios": [
+                        "1:1"
+                    ]
+                }
+            }
+        }
+    },
     "gpt-image-2": {
         "apiModelName": "gpt-image-2",
         "provider": "customOpenai",
