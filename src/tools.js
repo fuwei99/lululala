@@ -320,21 +320,23 @@ export class XmlToolCallStreamTransformer {
     }
   }
   
-  flush() {
+  flush({ isFinal = false } = {}) {
     if (this.toolCallsParsed) {
       return;
     }
     
     if (this.inToolCalls) {
-      this.parseAndEmit(this.toolCallsBuffer);
-      this.inToolCalls = false;
-      this.toolCallsParsed = true;
-      this.toolCallsBuffer = "";
+      if (isFinal) {
+        this.parseAndEmit(this.toolCallsBuffer);
+        this.inToolCalls = false;
+        this.toolCallsParsed = true;
+        this.toolCallsBuffer = "";
+      }
     } else {
       if (this.buffer) {
         this.onContent(this.buffer);
       }
+      this.buffer = "";
     }
-    this.buffer = "";
   }
 }
