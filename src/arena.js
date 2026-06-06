@@ -422,6 +422,7 @@ export async function runArenaModelsTestWithContinuations({
   let finalError = null;
   let continuationReason = null;
   const rounds = [];
+  let image = null;
 
   for (let round = 0; round <= maxContinuations; round += 1) {
     throwIfAborted(signal);
@@ -434,6 +435,7 @@ export async function runArenaModelsTestWithContinuations({
     finishReason = parsed.finishReason || finishReason;
     finalError = parsed.error;
     continuationReason = shouldContinueArenaResponse(parsed);
+    image = parsed.image || image;
 
     rounds.push({
       round,
@@ -481,6 +483,7 @@ export async function runArenaModelsTestWithContinuations({
     continuationReason,
     continuationCount: Math.max(0, rounds.length - 1),
     continuationExhausted: Boolean(autoContinue && continuationReason && rounds.length > maxContinuations),
+    image,
   };
 }
 
@@ -500,6 +503,7 @@ export function parseArenaLine(line) {
     if (prefix === "e") return { type: "event", value: JSON.parse(payload), raw: line };
     if (prefix === "d") return { type: "done", value: JSON.parse(payload), raw: line };
     if (prefix === "8") return { type: "metadata", value: JSON.parse(payload), raw: line };
+    if (prefix === "k") return { type: "image", value: JSON.parse(payload), raw: line };
   } catch {
     return { type: "parse_error", prefix, payload, raw: line };
   }
@@ -525,6 +529,7 @@ export async function collectArenaResponse(res, { signal } = {}) {
     finishMessageSeen: false,
     terminalEventSeen: false,
     events: [],
+    image: null,
   };
 
   if (contentType.includes("application/json")) {
@@ -557,6 +562,12 @@ export async function collectArenaResponse(res, { signal } = {}) {
     if (event.type === "reasoning" || event.type === "redacted_reasoning") {
       parsed.reasoningContent += eventText(event.value);
       parsed.reasoningEventCount += 1;
+    }
+    if (event.type === "image") {
+      parsed.image = event.value?.data || parsed.image;
+      if (parsed.image) {
+        parsed.content += `\n![image](data:image/png;base64,${parsed.image})\n`;
+      }
     }
     if (event.type === "error") parsed.error = event.value;
     if (event.type === "event") {

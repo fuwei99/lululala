@@ -306,6 +306,10 @@ async function streamOneArenaRound({
       completionIdRef.hasArenaId = true;
     }
     if (event.type === "content" && event.value) handleContent(eventText(event.value));
+    if (event.type === "image" && event.value?.data) {
+      const mdImage = `\n![image](data:image/png;base64,${event.value.data})\n`;
+      handleContent(mdImage);
+    }
     if (event.type === "reasoning" || event.type === "redacted_reasoning") {
       parsed.reasoningContent += eventText(event.value);
       parsed.reasoningEventCount += 1;
