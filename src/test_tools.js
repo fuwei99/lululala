@@ -219,12 +219,71 @@ async function testStreamTransformerTruncation() {
   console.log("testStreamTransformerTruncation passed!");
 }
 
+// Test 6: XmlToolCallStreamTransformer with nested HTML/XML inside parameter
+async function testStreamTransformerNestedTags() {
+  console.log("Running testStreamTransformerNestedTags...");
+  const chunks = [
+    "<tool_call>\n",
+    "  <tool name=\"write_file\">\n",
+    "    <arguments>\n",
+    "      <path>index.html</path>\n",
+    "      <content><div>Hello &lt; World</div></content>\n",
+    "    </arguments>\n",
+    "  </tool>\n",
+    "</tool_call>"
+  ];
+
+  const tools = [
+    {
+      type: "function",
+      function: {
+        name: "write_file",
+        parameters: {
+          type: "object",
+          properties: {
+            path: { type: "string" },
+            content: { type: "string" }
+          }
+        }
+      }
+    }
+  ];
+
+  let emittedContent = "";
+  const emittedToolCalls = [];
+
+  const transformer = new XmlToolCallStreamTransformer({
+    tools,
+    onContent: (text) => {
+      emittedContent += text;
+    },
+    onToolCall: (tc) => {
+      emittedToolCalls.push(tc);
+    }
+  });
+
+  for (const chunk of chunks) {
+    transformer.write(chunk);
+  }
+  transformer.flush();
+
+  const nameCall = emittedToolCalls.find(tc => tc.name !== undefined);
+  assert.strictEqual(nameCall.name, "write_file");
+
+  const argsChunks = emittedToolCalls.filter(tc => tc.argumentsChunk !== undefined).map(tc => tc.argumentsChunk).join("");
+  const parsedArgs = JSON.parse(argsChunks);
+  assert.strictEqual(parsedArgs.path, "index.html");
+  assert.strictEqual(parsedArgs.content.trim(), "<div>Hello &lt; World</div>");
+  console.log("testStreamTransformerNestedTags passed!");
+}
+
 async function runAll() {
   testFormatTools();
   testPreprocessHistory();
   testParsingAndStripping();
   await testStreamTransformerBasic();
   await testStreamTransformerTruncation();
+  await testStreamTransformerNestedTags();
   console.log("All tests passed successfully!");
 }
 

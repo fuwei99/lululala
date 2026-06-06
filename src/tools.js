@@ -290,6 +290,16 @@ export class XmlToolCallStreamTransformer {
     return prop.type || "string";
   }
 
+  isValidParam(toolName, paramName) {
+    if (!toolName) return false;
+    const tool = this.tools.find(t => t.function?.name === toolName);
+    if (!tool) return false;
+    const params = tool.function?.parameters;
+    if (!params || !params.properties) return false;
+    const keys = Object.keys(params.properties).map(k => k.toLowerCase());
+    return keys.includes(paramName.toLowerCase());
+  }
+
   write(chunk) {
     this.buffer += chunk;
     
@@ -361,6 +371,39 @@ export class XmlToolCallStreamTransformer {
         const tagFull = tagMatch[0];
         const tagIndex = tagMatch.index;
         
+        const isClosing = tagContent.startsWith("/");
+        const tagName = (isClosing ? tagContent.slice(1) : tagContent.split(/\s+/)[0]).toLowerCase();
+        
+        // Determine if this is a genuine control/system/parameter tag rather than text.
+        const isControlTag = 
+          ["tool", "arguments", "name", "tool_call"].includes(tagName) ||
+          (this.inArguments && (
+            (!isClosing && this.isValidParam(this.toolName, tagName)) ||
+            (isClosing && tagName === this.currentParam?.toLowerCase())
+          ));
+        
+        if (!isControlTag) {
+          // If it's not a control tag, treat it as plain text (it could be nested HTML/XML inside the parameter value).
+          const textToEmit = this.buffer.slice(0, tagIndex + tagFull.length);
+          if (textToEmit && this.inArguments && this.currentParam && this.emittedParamName) {
+            if (this.currentParamType === "string" && !this.emittedParamQuote) {
+              this.onToolCall({
+                index: this.toolCallIndex,
+                id: this.toolCallId,
+                argumentsChunk: `"`
+              });
+              this.emittedParamQuote = true;
+            }
+            this.onToolCall({
+              index: this.toolCallIndex,
+              id: this.toolCallId,
+              argumentsChunk: textToEmit
+            });
+          }
+          this.buffer = this.buffer.slice(tagIndex + tagFull.length);
+          continue;
+        }
+        
         const textBeforeTag = this.buffer.slice(0, tagIndex);
         if (textBeforeTag && this.inArguments && this.currentParam && this.emittedParamName) {
           if (this.currentParamType === "string" && !this.emittedParamQuote) {
@@ -379,9 +422,6 @@ export class XmlToolCallStreamTransformer {
         }
         
         this.buffer = this.buffer.slice(tagIndex + tagFull.length);
-        
-        const isClosing = tagContent.startsWith("/");
-        const tagName = (isClosing ? tagContent.slice(1) : tagContent.split(/\s+/)[0]).toLowerCase();
         
         if (!isClosing) {
           if (tagName === "tool") {
