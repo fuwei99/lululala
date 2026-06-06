@@ -1,0 +1,18 @@
+# Ignore local node modules and logs
+node_modules
+*.log
+bridge.pid
+
+# Ignore git folder
+.git
+
+# Ignore local secret / environment files
+.env
+.env.example
+
+# Ignore references and documentation
+reference/
+README.md
+REVIEWER_DEMO.md
+Dockerfile
+.dockerignore
