@@ -227,15 +227,7 @@ function requestAutoContinue(request) {
 }
 
 function diagnoseArenaError(error, model) {
-  const message = stringifyError(error);
-  if (message !== "BadRequestError") return null;
-  const outputs = model.outputCapabilities || [];
-  if (outputs.includes("text")) return null;
-  return [
-    "Arena /nextjs-api/models/test rejected this non-text output capability branch.",
-    `output_capabilities=${outputs.join("+") || "none"}.`,
-    "Search/image/video/web-only models use Arena's stream create-evaluation flow with modelId/modality/recaptcha, not the unauthenticated models/test text path.",
-  ].join(" ");
+  return null;
 }
 
 async function handleModels(req, res) {
