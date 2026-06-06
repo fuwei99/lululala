@@ -137,33 +137,6 @@ export function injectToolsIntoMessages(messages, tools) {
 }
 
 /**
- * Append the format reminder at the very end of the user prompt/messages to prevent format drift.
- */
-export function appendToolCallReminder(messages, tools) {
-  if (!Array.isArray(tools) || tools.length === 0 || messages.length === 0) return messages;
-  
-  const lastIndex = messages.length - 1;
-  const lastMsg = messages[lastIndex];
-  
-  const reminder = [
-    "",
-    "[TOOLCALL_FORMAT_REMINDER]:",
-    "<tool_calls>",
-    "  <invoke name=\"tool_name\">",
-    "    <parameter name=\"param_name\" string=\"true\">value</parameter>",
-    "  </invoke>",
-    "</tool_calls>"
-  ].join("\n");
-  
-  const newMessages = [...messages];
-  newMessages[lastIndex] = {
-    ...lastMsg,
-    content: `${lastMsg.content || ""}\n${reminder}`.trim()
-  };
-  return newMessages;
-}
-
-/**
  * Parse XML tool calls in `<tool_calls>` format.
  * Matches `<invoke name="...">...</invoke>` and `<parameter name="..." string="true|false">...</parameter>`
  * using robust regex with positive lookaheads for missing closing tags.
