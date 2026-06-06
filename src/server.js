@@ -608,9 +608,15 @@ async function handleImagesGenerations(req, res) {
 
 async function router(req, res) {
   try {
-    if (!checkClientAuth(req)) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const isPublicGet = req.method === "GET" && (
+      url.pathname.startsWith("/images/") ||
+      url.pathname === "/favicon.ico" ||
+      url.pathname === "/health"
+    );
+
+    if (!isPublicGet && !checkClientAuth(req)) {
       sendJson(res, 401, { error: { message: "Unauthorized", type: "invalid_api_key" } });
-      const url = new URL(req.url, `http://${req.headers.host}`);
       if (req.method === "POST") {
         console.log(`[POST] ${url.pathname} | Status: 401 | Error: Unauthorized`);
       } else {
@@ -618,7 +624,6 @@ async function router(req, res) {
       }
       return;
     }
-    const url = new URL(req.url, `http://${req.headers.host}`);
     if (req.method === "GET" && url.pathname === "/health") {
       sendJson(res, 200, {
         ok: true,
