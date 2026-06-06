@@ -1,0 +1,800 @@
+{
+  "verified": [
+    "openai/gpt-4o",
+    "openai/gpt-4.1-mini-2025-04-14",
+    "openaiResponses/gpt-5.5",
+    "baiduyiyan/zero-prism",
+    "mistral/mistral-medium-3.5",
+    "alibaba/qwen3.5-flash",
+    "openrouter/granite-4.1-8b",
+    "googleWithThoughtSignatures/pteronura",
+    "googleWithThoughtSignatures/significant-otter",
+    "googleWithThoughtSignatures/gemini-3.5-flash",
+    "googleWithThoughtSignatures/ajax-gf",
+    "googleVertexGlobal/gemini-3.5-flash",
+    "googleVertexGlobal/gemini-3.1-pro-preview",
+    "googleVertexGlobalWithThoughtSignatures/gemini-3.5-flash",
+    "googleVertexGlobalWithThoughtSignatures/gemini-3.1-flash-lite-preview",
+    "googleVertexAnthropic/claude-opus-4-6",
+    "googleVertexAnthropicAdaptive/claude-opus-4-6",
+    "googleVertexAnthropic/claude-opus-4-5@20251101",
+    "googleVertexAnthropic/claude-opus-4-1@20250805",
+    "googleVertexAnthropic/claude-opus-4@20250514",
+    "googleVertexAnthropic/claude-opus-4-7",
+    "googleVertexAnthropic/claude-opus-4-8",
+    "googleVertexAnthropicAdaptive/claude-opus-4-7",
+    "googleVertexAnthropicAdaptive/claude-opus-4-8",
+    "googleVertexAnthropic/claude-sonnet-4-6",
+    "deepseek/deepseek-v4-flash",
+    "deepseek/deepseek-v4-pro",
+    "deepseekToolCalling/deepseek-v4-flash",
+    "deepseekToolCalling/deepseek-v4-pro",
+    "openrouter/anthropic/claude-opus-4.6-fast",
+    "openrouter/anthropic/claude-opus-4.7",
+    "openrouter/anthropic/claude-opus-4.7-fast",
+    "openrouter/anthropic/claude-opus-4.8",
+    "openrouter/anthropic/claude-opus-4.8-fast",
+    "openrouter/google/gemini-3.1-pro-preview"
+  ],
+  "discovered": [
+    {
+      "id": "models-test:openai/gpt-4o",
+      "organization": "openai",
+      "provider": "openai",
+      "publicName": "gpt-4o",
+      "name": "gpt-4o",
+      "displayName": "gpt-4o",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/03_evidence/F-010_unauthenticated-nextjs-models-test-invokes-hidden-arena-models/traces/multi_model_live_matrix.json"
+    },
+    {
+      "id": "models-test:googleVertexGlobal/gemini-3.5-flash",
+      "organization": "google",
+      "provider": "googleVertexGlobal",
+      "publicName": "gemini-3.5-flash",
+      "name": "gemini-3.5-flash",
+      "displayName": "gemini-3.5-flash",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T17-38-02-784Z-google-current-abt-output-unlock-probe.json"
+    },
+    {
+      "id": "models-test:googleVertexGlobalWithThoughtSignatures/gemini-3.5-flash",
+      "organization": "google",
+      "provider": "googleVertexGlobalWithThoughtSignatures",
+      "publicName": "gemini-3.5-flash",
+      "name": "gemini-3.5-flash",
+      "displayName": "gemini-3.5-flash",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T17-38-02-784Z-google-current-abt-output-unlock-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/gemma-4-31b-it",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "gemma-4-31b-it",
+      "name": "gemma-4-31b-it",
+      "displayName": "gemma-4-31b-it",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": true,
+      "catalogStatus": "models_test_discovered_provider_for_provider_stripped_catalog_row",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-09-12-612Z-google-ai-studio-abt-gated-live-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/whitewater",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "whitewater",
+      "name": "whitewater",
+      "displayName": "whitewater",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-09-12-612Z-google-ai-studio-abt-gated-live-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/fiercefalcon",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "fiercefalcon",
+      "name": "fiercefalcon",
+      "displayName": "fiercefalcon",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-15-50-374Z-google-ai-studio-falcon-hawk-abt-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/snowball",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "snowball",
+      "name": "snowball",
+      "displayName": "snowball",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": false,
+          "file": false
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": false
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-21-11-617Z-google-ai-studio-user-supplied-abt-probe.json"
+    },
+    {
+      "id": "models-test:google/snowball",
+      "organization": "google",
+      "provider": "google",
+      "publicName": "snowball",
+      "name": "snowball",
+      "displayName": "snowball",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": false,
+          "file": false
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": false
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog_provider_alias",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T21-24-50-081Z-snowball-provider-alias-timeout-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/ajax",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "ajax",
+      "name": "ajax",
+      "displayName": "ajax",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-23-19-077Z-google-ai-studio-user-supplied-abt-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/hercules",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "hercules",
+      "name": "hercules",
+      "displayName": "hercules",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-23-19-077Z-google-ai-studio-user-supplied-abt-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/gemini-flash-latest",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "gemini-flash-latest",
+      "name": "gemini-flash-latest",
+      "displayName": "gemini-flash-latest",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-31-29-774Z-google-ai-studio-user-supplied-abt-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/gemini-3-flash-preview",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "gemini-3-flash-preview",
+      "name": "gemini-3-flash-preview",
+      "displayName": "gemini-3-flash-preview",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-34-19-492Z-google-ai-studio-user-supplied-abt-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/gemini-3.1-flash-lite",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "gemini-3.1-flash-lite",
+      "name": "gemini-3.1-flash-lite",
+      "displayName": "gemini-3.1-flash-lite",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-34-19-492Z-google-ai-studio-user-supplied-abt-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/gemini-2.5-pro",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "gemini-2.5-pro",
+      "name": "gemini-2.5-pro",
+      "displayName": "gemini-2.5-pro",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-34-19-492Z-google-ai-studio-user-supplied-abt-probe.json"
+    },
+    {
+      "id": "models-test:googleWithThoughtSignatures/gemini-2.5-flash",
+      "organization": "google",
+      "provider": "googleWithThoughtSignatures",
+      "publicName": "gemini-2.5-flash",
+      "name": "gemini-2.5-flash",
+      "displayName": "gemini-2.5-flash",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T18-34-19-492Z-google-ai-studio-user-supplied-abt-probe.json"
+    },
+    {
+      "id": "models-test:googleVertexAnthropicAdaptive/claude-sonnet-4-6",
+      "organization": "anthropic",
+      "provider": "googleVertexAnthropicAdaptive",
+      "publicName": "claude-sonnet-4-6",
+      "name": "claude-sonnet-4-6",
+      "displayName": "claude-sonnet-4-6",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "file": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "modelsTestDefaultInferenceSettings": {
+        "temperature": 1
+      },
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T17-52-18-154Z-existence-oracle-hidden-model-probe.json"
+    },
+    {
+      "id": "models-test:anthropic/claude-opus-4-1-20250805",
+      "organization": "anthropic",
+      "provider": "anthropic",
+      "publicName": "claude-opus-4-1-20250805",
+      "name": "claude-opus-4-1-20250805",
+      "displayName": "claude-opus-4-1-20250805",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/03_evidence/F-010_unauthenticated-nextjs-models-test-invokes-hidden-arena-models/traces/hidden_claude_legacy_opus_models_test_raw_alias_impact.json"
+    },
+    {
+      "id": "models-test:anthropic/claude-opus-4-20250514",
+      "organization": "anthropic",
+      "provider": "anthropic",
+      "publicName": "claude-opus-4-20250514",
+      "name": "claude-opus-4-20250514",
+      "displayName": "claude-opus-4-20250514",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/03_evidence/F-010_unauthenticated-nextjs-models-test-invokes-hidden-arena-models/traces/hidden_claude_legacy_opus_models_test_raw_alias_impact.json"
+    },
+    {
+      "id": "models-test:anthropic/claude-opus-4-7",
+      "organization": "anthropic",
+      "provider": "anthropic",
+      "publicName": "claude-opus-4-7",
+      "name": "claude-opus-4-7",
+      "displayName": "claude-opus-4-7",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "modelsTestDefaultInferenceSettings": {
+        "temperature": 1
+      },
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T17-52-18-154Z-existence-oracle-hidden-model-probe.json"
+    },
+    {
+      "id": "models-test:anthropic/claude-opus-4-8",
+      "organization": "anthropic",
+      "provider": "anthropic",
+      "publicName": "claude-opus-4-8",
+      "name": "claude-opus-4-8",
+      "displayName": "claude-opus-4-8",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "modelsTestDefaultInferenceSettings": {
+        "temperature": 1
+      },
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T17-52-18-154Z-existence-oracle-hidden-model-probe.json"
+    },
+    {
+      "id": "models-test:deepseek/deepseek-v4-pro",
+      "organization": "deepseek",
+      "provider": "deepseek",
+      "publicName": "deepseek-v4-pro",
+      "name": "deepseek-v4-pro",
+      "displayName": "deepseek-v4-pro",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_provider_alias",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T23-13-51.219Z-arena-abt-candidate-enumeration.json"
+    },
+    {
+      "id": "models-test:deepseekToolCalling/deepseek-v4-pro",
+      "organization": "deepseek",
+      "provider": "deepseekToolCalling",
+      "publicName": "deepseek-v4-pro",
+      "name": "deepseek-v4-pro",
+      "displayName": "deepseek-v4-pro",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_provider_alias",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T23-13-51.219Z-arena-abt-candidate-enumeration.json"
+    },
+    {
+      "id": "models-test:deepseekToolCalling/deepseek-v4-flash",
+      "organization": "deepseek",
+      "provider": "deepseekToolCalling",
+      "publicName": "deepseek-v4-flash",
+      "name": "deepseek-v4-flash",
+      "displayName": "deepseek-v4-flash",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true,
+          "web": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_provider_alias",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T23-13-51.219Z-arena-abt-candidate-enumeration.json"
+    },
+    {
+      "id": "models-test:openaiResponses/iris-alpha",
+      "organization": "openai",
+      "provider": "openaiResponses",
+      "publicName": "iris-alpha",
+      "name": "iris-alpha",
+      "displayName": "iris-alpha",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T23-22-46.628Z-arena-selector-probe.json"
+    },
+    {
+      "id": "models-test:openaiResponses/iris-alpha-high",
+      "organization": "openai",
+      "provider": "openaiResponses",
+      "publicName": "iris-alpha-high",
+      "name": "iris-alpha-high",
+      "displayName": "iris-alpha-high",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_virtual_reasoning_alias",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T23-33-09.470Z-iris-reasoning-effort-probe.json"
+    },
+    {
+      "id": "models-test:openaiResponses/iris-alpha-xhigh",
+      "organization": "openai",
+      "provider": "openaiResponses",
+      "publicName": "iris-alpha-xhigh",
+      "name": "iris-alpha-xhigh",
+      "displayName": "iris-alpha-xhigh",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_virtual_reasoning_alias",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T23-33-09.470Z-iris-reasoning-effort-probe.json"
+    },
+    {
+      "id": "models-test:openaiResponsesWithPhase/iris-alpha",
+      "organization": "openai",
+      "provider": "openaiResponsesWithPhase",
+      "publicName": "iris-alpha",
+      "name": "iris-alpha",
+      "displayName": "iris-alpha",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T23-22-46.628Z-arena-selector-probe.json"
+    },
+    {
+      "id": "models-test:openaiResponsesWithPhase/iris-alpha-high",
+      "organization": "openai",
+      "provider": "openaiResponsesWithPhase",
+      "publicName": "iris-alpha-high",
+      "name": "iris-alpha-high",
+      "displayName": "iris-alpha-high",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_virtual_reasoning_alias",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T23-33-09.470Z-iris-reasoning-effort-probe.json"
+    },
+    {
+      "id": "models-test:openaiResponsesWithPhase/iris-alpha-xhigh",
+      "organization": "openai",
+      "provider": "openaiResponsesWithPhase",
+      "publicName": "iris-alpha-xhigh",
+      "name": "iris-alpha-xhigh",
+      "displayName": "iris-alpha-xhigh",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_virtual_reasoning_alias",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": "_audit/02_tracker/lead_artifacts/L-027_nextjs-models-test-hidden-invocation/logs/2026-06-01T23-33-09.470Z-iris-reasoning-effort-probe.json"
+    },
+    {
+      "id": "models-test:openrouter/anthropic/claude-opus-4.6-fast",
+      "organization": "anthropic",
+      "provider": "openrouter",
+      "publicName": "claude-opus-4.6-fast",
+      "name": "anthropic/claude-opus-4.6-fast",
+      "displayName": "claude-opus-4.6-fast",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": null
+    },
+    {
+      "id": "models-test:openrouter/anthropic/claude-opus-4.7",
+      "organization": "anthropic",
+      "provider": "openrouter",
+      "publicName": "claude-opus-4.7",
+      "name": "anthropic/claude-opus-4.7",
+      "displayName": "claude-opus-4.7",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": null
+    },
+    {
+      "id": "models-test:openrouter/anthropic/claude-opus-4.7-fast",
+      "organization": "anthropic",
+      "provider": "openrouter",
+      "publicName": "claude-opus-4.7-fast",
+      "name": "anthropic/claude-opus-4.7-fast",
+      "displayName": "claude-opus-4.7-fast",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": null
+    },
+    {
+      "id": "models-test:openrouter/anthropic/claude-opus-4.8",
+      "organization": "anthropic",
+      "provider": "openrouter",
+      "publicName": "claude-opus-4.8",
+      "name": "anthropic/claude-opus-4.8",
+      "displayName": "claude-opus-4.8",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": null
+    },
+    {
+      "id": "models-test:openrouter/anthropic/claude-opus-4.8-fast",
+      "organization": "anthropic",
+      "provider": "openrouter",
+      "publicName": "claude-opus-4.8-fast",
+      "name": "anthropic/claude-opus-4.8-fast",
+      "displayName": "claude-opus-4.8-fast",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": null
+    },
+    {
+      "id": "models-test:openrouter/google/gemini-3.1-pro-preview",
+      "organization": "google",
+      "provider": "openrouter",
+      "publicName": "gemini-3.1-pro-preview",
+      "name": "google/gemini-3.1-pro-preview",
+      "displayName": "gemini-3.1-pro-preview",
+      "capabilities": {
+        "inputCapabilities": {
+          "text": true,
+          "image": true
+        },
+        "outputCapabilities": {
+          "text": true
+        }
+      },
+      "userSelectable": false,
+      "catalogStatus": "models_test_discovered_off_catalog",
+      "discoveredByModelsTest": true,
+      "evidenceArtifact": null
+    }
+  ]
+}
