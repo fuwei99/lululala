@@ -1,0 +1,460 @@
+{
+    "snowball": {
+        "apiModelName": "snowball",
+        "provider": "google",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "kepler-alpha": {
+        "apiModelName": "kepler-alpha",
+        "provider": "openaiResponsesWithPhase",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "gpt-5.5": {
+        "apiModelName": "gpt-5.5",
+        "provider": "openaiResponses",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "gpt-5.5-xhigh": {
+        "apiModelName": "gpt-5.5",
+        "provider": "openaiResponses",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "oceanus": {
+        "apiModelName": "oceanus",
+        "provider": "anthropic",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "claude-opus-4-8": {
+        "apiModelName": "claude-opus-4-8",
+        "provider": "anthropic",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "mercury-alpha": {
+        "apiModelName": "mercury-alpha",
+        "provider": "openaiResponses",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "aiolos": {
+        "apiModelName": "aiolos",
+        "provider": "google",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "chronos": {
+        "apiModelName": "chronos",
+        "provider": "google",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "ajax": {
+        "apiModelName": "ajax",
+        "provider": "google",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "claude-opus-4-1": {
+        "apiModelName": "claude-opus-4-1",
+        "provider": "anthropic",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "claude-opus-4-5": {
+        "apiModelName": "claude-opus-4-5",
+        "provider": "anthropic",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "claude-opus-4-6": {
+        "apiModelName": "claude-opus-4-6",
+        "provider": "anthropic",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "claude-opus-4-7": {
+        "apiModelName": "claude-opus-4-7",
+        "provider": "anthropic",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "anthropic/claude-opus-4.1": {
+        "apiModelName": "anthropic/claude-opus-4.1",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "anthropic/claude-opus-4.5": {
+        "apiModelName": "anthropic/claude-opus-4.5",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "anthropic/claude-opus-4.6-fast": {
+        "apiModelName": "anthropic/claude-opus-4.6-fast",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "anthropic/claude-opus-4.7": {
+        "apiModelName": "anthropic/claude-opus-4.7",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "anthropic/claude-opus-4.7-fast": {
+        "apiModelName": "anthropic/claude-opus-4.7-fast",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "anthropic/claude-opus-4.8": {
+        "apiModelName": "anthropic/claude-opus-4.8",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "anthropic/claude-opus-4.8-fast": {
+        "apiModelName": "anthropic/claude-opus-4.8-fast",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "google/gemini-3.1-pro-preview": {
+        "apiModelName": "google/gemini-3.1-pro-preview",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "gpt-image-2": {
+        "apiModelName": "gpt-image-2",
+        "provider": "customOpenai",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true
+            },
+            "outputCapabilities": {
+                "image": {
+                    "aspectRatios": [
+                        "1:1"
+                    ]
+                }
+            }
+        }
+    },
+    "gemini-3.5-flash": {
+        "apiModelName": "gemini-3.5-flash",
+        "provider": "googleVertexGlobalWithThoughtSignatures",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "gemini-3.1-pro-preview": {
+        "apiModelName": "gemini-3.1-pro-preview",
+        "provider": "googleVertexGlobalWithThoughtSignatures",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "deepseek-v4-pro": {
+        "apiModelName": "deepseek-v4-pro",
+        "provider": "deepseek",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true
+            },
+            "outputCapabilities": {
+                "text": true,
+                "web": true
+            }
+        }
+    },
+    "z-ai/glm-5.1": {
+        "apiModelName": "z-ai/glm-5.1",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "qwen/qwen3.7-plus": {
+        "apiModelName": "qwen/qwen3.7-plus",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "qwen/qwen3.7-max": {
+        "apiModelName": "qwen/qwen3.7-max",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "minimax/minimax-m3": {
+        "apiModelName": "minimax/minimax-m3",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "moonshotai/kimi-k2.6": {
+        "apiModelName": "moonshotai/kimi-k2.6",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "openai/gpt-5.5": {
+        "apiModelName": "openai/gpt-5.5",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "openai/gpt-5.5-pro": {
+        "apiModelName": "openai/gpt-5.5-pro",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "x-ai/grok-4.20": {
+        "apiModelName": "x-ai/grok-4.20",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    },
+    "x-ai/grok-4.3": {
+        "apiModelName": "x-ai/grok-4.3",
+        "provider": "openrouter",
+        "capabilities": {
+            "inputCapabilities": {
+                "text": true,
+                "image": true
+            },
+            "outputCapabilities": {
+                "text": true
+            }
+        }
+    }
+}

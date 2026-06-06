@@ -11,14 +11,54 @@ import {
   PORT,
 } from "./config.js";
 import { buildArenaBody, isAbortError, runArenaModelsTestWithContinuations } from "./arena.js";
-import {
-  isVerifiedModelsTestModel,
-  loadArenaCatalog,
-  resolveModel,
-  toOpenAIModel,
-} from "./catalog.js";
+import { readFileSync } from "node:fs";
 import { makeChatCompletion, streamArenaAsOpenAI } from "./openai.js";
 import { applyLatencyHint, formatMessagesAsStructuredPrompt } from "./roles.js";
+
+function loadModelsConfig() {
+  try {
+    const url = new URL("../models.jsonc", import.meta.url);
+    const content = readFileSync(url, "utf8");
+    // Remove single line comments // ... and block comments /* ... */
+    const cleaned = content
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/.*/g, "");
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error("Failed to load models.jsonc:", e);
+    return {};
+  }
+}
+
+function toOpenAIModelFromConfig(modelId, config) {
+  const inputCaps = Object.keys(config.capabilities?.inputCapabilities || {}).sort();
+  const outputCaps = Object.keys(config.capabilities?.outputCapabilities || {}).sort();
+  return {
+    id: modelId,
+    object: "model",
+    created: 0,
+    owned_by: config.provider || "arena",
+    arena_model_id: modelId,
+    catalog_model_id: `${config.provider}/${config.apiModelName}`,
+    arena_models_test_selector: `${config.provider}/${config.apiModelName}`,
+    api_model_name: config.apiModelName,
+    catalog_api_model_name: config.apiModelName,
+    arena_models_test_api_model_name: config.apiModelName,
+    arena_models_test_provider: config.provider,
+    arena_models_test_default_inference_settings: config.modelsTestDefaultInferenceSettings || null,
+    arena_models_test_alias_reason: null,
+    provider: config.provider,
+    public_name: modelId,
+    display_name: modelId,
+    user_selectable: true,
+    catalog_status: "configured",
+    discovered_by_models_test: false,
+    evidence_artifact: null,
+    theoretical_callable: true,
+    input_capabilities: inputCaps,
+    output_capabilities: outputCaps,
+  };
+}
 
 function responseWritable(res) {
   return !res.destroyed && !res.writableEnded;
@@ -137,30 +177,29 @@ function diagnoseArenaError(error, model) {
 }
 
 async function handleModels(req, res) {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const refresh = url.searchParams.get("refresh") === "1";
-  const hiddenOnly = url.searchParams.get("hidden") === "1";
-  const includeAllTheoretical =
-    url.searchParams.get("all") === "1" || url.searchParams.get("theoretical") === "1";
-  const catalog = await loadArenaCatalog({ refresh });
-  const baseList = includeAllTheoretical
-    ? catalog.callable
-    : catalog.callable.filter(isVerifiedModelsTestModel);
-  const list = hiddenOnly ? baseList.filter((m) => !m.userSelectable) : baseList;
+  const modelsConfig = loadModelsConfig();
+  const list = Object.entries(modelsConfig).map(([modelId, config]) =>
+    toOpenAIModelFromConfig(modelId, config)
+  );
+
   sendJson(res, 200, {
     object: "list",
-    data: list.map(toOpenAIModel),
+    data: list,
     arena_bridge: {
-      fetched_at: catalog.fetchedAt,
-      deploy_ids: catalog.deployIds,
-      counts: catalog.counts,
+      fetched_at: new Date().toISOString(),
+      deploy_ids: [],
+      counts: {
+        totalCatalogModels: list.length,
+        theoreticalCallable: list.length,
+        publicSelectableCallable: list.length,
+        hiddenNonSelectableCallable: 0,
+        discoveredOffCatalogCallable: 0,
+        excludedMissingProviderOrName: 0,
+      },
       live_calls_enabled: ENABLE_LIVE,
       local_model_filter: "none",
-      model_list_mode: includeAllTheoretical ? "all_theoretical_candidates" : "verified_successes",
-      note:
-        includeAllTheoretical
-          ? "This is the theoretical provider/name/capability candidate list for /nextjs-api/models/test; completed inference must be validated per model."
-          : "Default list is restricted to selectors with prior completed inference evidence or corrected aliases backed by completed inference evidence. Use ?all=1 for the broader theoretical candidate list.",
+      model_list_mode: "configured_models",
+      note: "Model list is loaded dynamically from models.jsonc.",
       auto_continue_enabled: AUTO_CONTINUE,
       latency_hint_enabled: LATENCY_HINT,
       max_continuations: MAX_CONTINUATIONS,
@@ -183,9 +222,24 @@ async function handleChatCompletions(req, res) {
   try {
   const request = await readJson(req);
   if (client.signal.aborted) return;
-  const catalog = await loadArenaCatalog({ signal: client.signal });
-  if (client.signal.aborted) return;
-  const model = resolveModel(catalog, request.model);
+  const modelsConfig = loadModelsConfig();
+  const rawModel = modelsConfig[request.model];
+  if (!rawModel) {
+    sendJson(res, 400, {
+      error: {
+        message: `Unsupported model: ${request.model}. Supported: ${Object.keys(modelsConfig).join(", ")}`,
+        type: "unsupported_model",
+      },
+    });
+    client.markFinished();
+    return;
+  }
+  const model = {
+    ...rawModel,
+    id: request.model,
+    inputCapabilities: Object.keys(rawModel.capabilities?.inputCapabilities || {}).sort(),
+    outputCapabilities: Object.keys(rawModel.capabilities?.outputCapabilities || {}).sort(),
+  };
   logRequestSummary(request, model);
 
   const basePrompt = formatMessagesAsStructuredPrompt(request.messages);
@@ -237,7 +291,7 @@ async function handleChatCompletions(req, res) {
       arena_bridge: {
         model: openaiModelId,
         arena_model_id: model.id,
-        user_selectable: model.userSelectable,
+        user_selectable: model.userSelectable !== false,
         catalog_model_id: `${model.provider}/${model.apiModelName}`,
         arena_models_test_selector: openaiModelId,
         catalog_api_model_name: model.apiModelName,
@@ -286,7 +340,7 @@ async function handleChatCompletions(req, res) {
           model.modelsTestDefaultInferenceSettings || null,
         arena_models_test_inference_settings: arenaBody.inferenceSettings || null,
         arena_models_test_alias_reason: model.modelsTestAliasReason || null,
-        user_selectable: model.userSelectable,
+        user_selectable: model.userSelectable !== false,
         role_mapping: "structured_prompt_transcript",
         auto_continue_enabled: autoContinue,
         latency_hint_enabled: latencyHintEnabled,

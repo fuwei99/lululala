@@ -7,7 +7,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "pull-models": "node src/cli.js pull-models",
+    "pull-models": "node models.js",
     "smoke": "node src/smoke.js",
     "smoke:live": "node src/smoke.js --live"
   },
