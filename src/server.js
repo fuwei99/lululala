@@ -21,6 +21,7 @@ import {
   preprocessHistoryMessages,
   injectToolsIntoMessages,
   appendToolCallReminder,
+  hasUnclosedToolCalls,
   parseAllToolCalls,
   stripToolCalls
 } from "./tools.js";
@@ -400,7 +401,10 @@ async function handleChatCompletions(req, res) {
 
     const parsedToolCalls = parseAllToolCalls(completed.content);
     const hasToolCalls = parsedToolCalls.length > 0;
-    const finalContent = hasToolCalls ? stripToolCalls(completed.content) : completed.content;
+    const finalContent =
+      hasToolCalls || hasUnclosedToolCalls(completed.content)
+        ? stripToolCalls(completed.content)
+        : completed.content;
 
     sendJson(
       res,

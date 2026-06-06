@@ -1,5 +1,6 @@
 import { ARENA_MODELS_TEST_ENDPOINT } from "./config.js";
 import { saveImageAndGetUrl } from "./images.js";
+import { hasUnclosedToolCalls } from "./tools.js";
 
 function numberParam(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
@@ -336,6 +337,7 @@ export function looksLikeIncompleteTail(content) {
 
 export function shouldContinueArenaResponse(parsed) {
   if (!parsed) return null;
+  if (parsed.incompleteToolCalls || hasUnclosedToolCalls(parsed.content)) return "unclosed_tool_calls";
   if (parsed.continuationMarkerSeen) return "assistant_requested_continuation_marker";
   if (isTimeoutLikeError(parsed.error)) return "timeout";
   if (parsed.finishReason === "length") return "finish_reason_length";
@@ -447,6 +449,7 @@ export async function runArenaModelsTestWithContinuations({
       reasoningLength: parsed.reasoningContent?.length || 0,
       reasoningEventCount: parsed.reasoningEventCount || 0,
       continuationMarkerSeen: parsed.continuationMarkerSeen,
+      incompleteToolCalls: parsed.incompleteToolCalls,
       finishStepSeen: parsed.finishStepSeen,
       finishMessageSeen: parsed.finishMessageSeen,
       terminalEventSeen: parsed.terminalEventSeen,
@@ -455,7 +458,12 @@ export async function runArenaModelsTestWithContinuations({
       continuationReason,
     });
 
-    if (!autoContinue || !continuationReason) break;
+    if (!autoContinue || !continuationReason) {
+      if (continuationReason === "unclosed_tool_calls") {
+        finishReason = "length";
+      }
+      break;
+    }
     if (round >= maxContinuations) {
       finishReason = "length";
       break;
@@ -532,6 +540,7 @@ export async function collectArenaResponse(res, { signal, host } = {}) {
     terminalEventSeen: false,
     events: [],
     image: null,
+    incompleteToolCalls: false,
   };
 
   if (contentType.includes("application/json")) {
@@ -597,5 +606,6 @@ export async function collectArenaResponse(res, { signal, host } = {}) {
     parsed.continuationMarkerSeen = true;
     parsed.content = removeContinuationMarkers(parsed.content);
   }
+  parsed.incompleteToolCalls = hasUnclosedToolCalls(parsed.content);
   return parsed;
 }

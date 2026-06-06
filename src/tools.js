@@ -222,9 +222,19 @@ export function parseToolCallAny(text) {
 
 export function parseAllToolCalls(text) {
   if (!text) return [];
-  const containerMatch = /<tool_calls>([\s\S]*?)(?:<\/tool_calls>|$)/i.exec(text);
+  const containerMatch = /<tool_calls>([\s\S]*?)<\/tool_calls>/i.exec(text);
+  if (!containerMatch && /<tool_calls>/i.test(text)) return [];
   const contentToSearch = containerMatch ? containerMatch[1] : text;
   return parseXmlToolCalls(contentToSearch);
+}
+
+export function hasUnclosedToolCalls(text) {
+  if (!text) return false;
+  const lowerText = String(text).toLowerCase();
+  const startIdx = lowerText.lastIndexOf("<tool_calls>");
+  if (startIdx === -1) return false;
+  const endIdx = lowerText.indexOf("</tool_calls>", startIdx);
+  return endIdx === -1;
 }
 
 /**
@@ -319,6 +329,10 @@ export class XmlToolCallStreamTransformer {
       this.toolCallIndex++;
     }
   }
+
+  hasUnclosedToolCalls() {
+    return this.inToolCalls;
+  }
   
   flush() {
     if (this.toolCallsParsed) {
@@ -326,10 +340,7 @@ export class XmlToolCallStreamTransformer {
     }
     
     if (this.inToolCalls) {
-      this.parseAndEmit(this.toolCallsBuffer);
-      this.inToolCalls = false;
-      this.toolCallsParsed = true;
-      this.toolCallsBuffer = "";
+      return;
     } else {
       if (this.buffer) {
         this.onContent(this.buffer);

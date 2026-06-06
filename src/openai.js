@@ -178,6 +178,7 @@ async function streamOneArenaRound({
         emittedContent: "",
         rawEmittedContent: "",
         continuationMarkerSeen: false,
+        incompleteToolCalls: false,
         finishStepSeen: false,
         finishMessageSeen: false,
         terminalEventSeen: false,
@@ -197,6 +198,7 @@ async function streamOneArenaRound({
       emittedContent: "",
       rawEmittedContent: "",
       continuationMarkerSeen: false,
+      incompleteToolCalls: false,
       finishStepSeen: false,
       finishMessageSeen: false,
       terminalEventSeen: false,
@@ -224,6 +226,7 @@ async function streamOneArenaRound({
           emittedContent: "",
           rawEmittedContent: "",
           continuationMarkerSeen: false,
+          incompleteToolCalls: false,
           finishStepSeen: false,
           finishMessageSeen: false,
           terminalEventSeen: false,
@@ -245,6 +248,7 @@ async function streamOneArenaRound({
       emittedContent: "",
       rawEmittedContent: "",
       continuationMarkerSeen: false,
+      incompleteToolCalls: false,
       finishStepSeen: false,
       finishMessageSeen: false,
       terminalEventSeen: false,
@@ -265,6 +269,7 @@ async function streamOneArenaRound({
     emittedContent: "",
     rawEmittedContent: "",
     continuationMarkerSeen: false,
+    incompleteToolCalls: false,
     finishStepSeen: false,
     finishMessageSeen: false,
     terminalEventSeen: false,
@@ -399,6 +404,7 @@ async function streamOneArenaRound({
   if (!overlapResolved) flushPendingOverlap();
   if (transformer) {
     transformer.flush();
+    parsed.incompleteToolCalls = transformer.hasUnclosedToolCalls();
   }
   markerFilter.flush();
   if (parsed.content.includes(CONTINUATION_MARKER)) {
@@ -534,7 +540,12 @@ export async function streamArenaAsOpenAI({
       }
 
       const continuationReason = result.continuationReason;
-      if (!autoContinue || !continuationReason) break;
+      if (!autoContinue || !continuationReason) {
+        if (continuationReason === "unclosed_tool_calls") {
+          finishReason = "length";
+        }
+        break;
+      }
       if (round >= maxContinuations) {
         continuationExhausted = true;
         finishReason = "length";
