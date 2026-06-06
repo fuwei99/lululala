@@ -17,6 +17,13 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { makeChatCompletion, streamArenaAsOpenAI } from "./openai.js";
 import { applyLatencyHint, formatMessagesAsClaudePrompt, formatMessagesAsStructuredPrompt } from "./roles.js";
+import {
+  preprocessHistoryMessages,
+  injectToolsIntoMessages,
+  appendToolCallReminder,
+  parseAllToolCalls,
+  stripToolCalls
+} from "./tools.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const imgDir = join(__dirname, "..", "generated_images");
@@ -310,9 +317,13 @@ async function handleChatCompletions(req, res) {
                      (model.apiModelName && model.apiModelName.toLowerCase().includes("claude")) || 
                      model.provider === "anthropic";
 
+    const preprocessedMessages = preprocessHistoryMessages(request.messages, isClaude);
+    const messagesWithTools = injectToolsIntoMessages(preprocessedMessages, request.tools);
+    const finalMessages = appendToolCallReminder(messagesWithTools, request.tools);
+
     const basePrompt = isClaude
-      ? formatMessagesAsClaudePrompt(request.messages)
-      : formatMessagesAsStructuredPrompt(request.messages);
+      ? formatMessagesAsClaudePrompt(finalMessages)
+      : formatMessagesAsStructuredPrompt(finalMessages);
     const latencyHintEnabled = LATENCY_HINT && request.arena_latency_hint !== false;
     const prompt = latencyHintEnabled ? applyLatencyHint(basePrompt, LATENCY_HINT_TEXT, isClaude) : basePrompt;
 
@@ -339,6 +350,7 @@ async function handleChatCompletions(req, res) {
         maxContinuations,
         contextChars: CONTINUATION_CONTEXT_CHARS,
         signal: client.signal,
+        tools: request.tools,
       });
       client.markFinished();
       return;
@@ -391,6 +403,10 @@ async function handleChatCompletions(req, res) {
       return;
     }
 
+    const parsedToolCalls = parseAllToolCalls(completed.content);
+    const hasToolCalls = parsedToolCalls.length > 0;
+    const finalContent = hasToolCalls ? stripToolCalls(completed.content) : completed.content;
+
     sendJson(
       res,
       200,
@@ -398,8 +414,9 @@ async function handleChatCompletions(req, res) {
         ...makeChatCompletion({
           id: completed.messageId,
           model: openaiModelId,
-          content: completed.content,
-          finishReason: completed.finishReason,
+          content: finalContent,
+          toolCalls: parsedToolCalls,
+          finishReason: hasToolCalls ? "tool_calls" : completed.finishReason,
           usage: completed.usage,
         }),
         arena_bridge: {

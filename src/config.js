@@ -48,7 +48,7 @@ export const LATENCY_HINT_TEXT =
     "Start now with the actual answer or artifact and keep writing it.",
     "For long answers that are not fully complete, append <<<LMARENA_CONTINUE>>> as the final line; the bridge removes this marker and continues automatically.",
   ].join(" ");
-export const MAX_CONTINUATIONS = integerEnv("LMARENA_MAX_CONTINUATIONS", 12, { min: 0 });
+export const MAX_CONTINUATIONS = integerEnv("LMARENA_MAX_CONTINUATIONS", 20, { min: 0 });
 export const CONTINUATION_CONTEXT_CHARS = integerEnv(
   "LMARENA_CONTINUATION_CONTEXT_CHARS",
   12000,

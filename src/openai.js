@@ -13,24 +13,37 @@ import {
   throwIfAborted,
 } from "./arena.js";
 import { randomUUID } from "node:crypto";
+import { XmlToolCallStreamTransformer } from "./tools.js";
 
-export function makeChatCompletion({ id, model, content, finishReason = "stop", usage = null }) {
+export function makeChatCompletion({ id, model, content, toolCalls = null, finishReason = "stop", usage = null }) {
   const created = Math.floor(Date.now() / 1000);
+  const choice = {
+    index: 0,
+    message: {
+      role: "assistant",
+      content: content || null,
+    },
+    finish_reason: finishReason === "unknown" ? "stop" : finishReason,
+  };
+
+  if (toolCalls && toolCalls.length > 0) {
+    choice.message.tool_calls = toolCalls.map((tc) => ({
+      id: tc.id || `call_${randomUUID().replace(/-/g, "").slice(0, 16)}`,
+      type: "function",
+      function: {
+        name: tc.name,
+        arguments: typeof tc.arguments === "string" ? tc.arguments : JSON.stringify(tc.arguments),
+      },
+    }));
+    choice.finish_reason = "tool_calls";
+  }
+
   return {
     id: id || `chatcmpl-${randomUUID()}`,
     object: "chat.completion",
     created,
     model,
-    choices: [
-      {
-        index: 0,
-        message: {
-          role: "assistant",
-          content,
-        },
-        finish_reason: finishReason === "unknown" ? "stop" : finishReason,
-      },
-    ],
+    choices: [choice],
     usage: usage
       ? {
           prompt_tokens: usage.promptTokens ?? 0,
@@ -144,6 +157,7 @@ async function streamOneArenaRound({
   round,
   signal,
   contextChars,
+  transformer,
 }) {
   let arenaResponse;
   try {
@@ -160,6 +174,7 @@ async function streamOneArenaRound({
         reasoningContent: "",
         reasoningEventCount: 0,
         emittedContent: "",
+        rawEmittedContent: "",
         continuationMarkerSeen: false,
         finishStepSeen: false,
         finishMessageSeen: false,
@@ -178,6 +193,7 @@ async function streamOneArenaRound({
       reasoningContent: "",
       reasoningEventCount: 0,
       emittedContent: "",
+      rawEmittedContent: "",
       continuationMarkerSeen: false,
       finishStepSeen: false,
       finishMessageSeen: false,
@@ -204,6 +220,7 @@ async function streamOneArenaRound({
           reasoningContent: "",
           reasoningEventCount: 0,
           emittedContent: "",
+          rawEmittedContent: "",
           continuationMarkerSeen: false,
           finishStepSeen: false,
           finishMessageSeen: false,
@@ -224,6 +241,7 @@ async function streamOneArenaRound({
       reasoningContent: "",
       reasoningEventCount: 0,
       emittedContent: "",
+      rawEmittedContent: "",
       continuationMarkerSeen: false,
       finishStepSeen: false,
       finishMessageSeen: false,
@@ -243,6 +261,7 @@ async function streamOneArenaRound({
     reasoningContent: "",
     reasoningEventCount: 0,
     emittedContent: "",
+    rawEmittedContent: "",
     continuationMarkerSeen: false,
     finishStepSeen: false,
     finishMessageSeen: false,
@@ -268,8 +287,19 @@ async function streamOneArenaRound({
     parsed.continuationMarkerSeen = true;
   });
 
+  if (transformer) {
+    transformer.onContent = (content) => {
+      return markerFilter.push(content);
+    };
+  }
+
   const emitContent = (content) => {
     if (!content || signal?.aborted || !responseWritable(httpResponse)) return false;
+    parsed.rawEmittedContent += content;
+    if (transformer) {
+      transformer.write(content);
+      return true;
+    }
     return markerFilter.push(content);
   };
 
@@ -358,6 +388,9 @@ async function streamOneArenaRound({
   buffer += decoder.decode();
   if (buffer.trim()) handleLine(buffer);
   if (!overlapResolved) flushPendingOverlap();
+  if (transformer) {
+    transformer.flush();
+  }
   markerFilter.flush();
   if (parsed.content.includes(CONTINUATION_MARKER)) {
     parsed.continuationMarkerSeen = true;
@@ -378,6 +411,7 @@ export async function streamArenaAsOpenAI({
   maxContinuations = 12,
   contextChars = 12000,
   signal,
+  tools = [],
 }) {
   if (!responseWritable(httpResponse)) return;
   httpResponse.writeHead(200, {
@@ -394,9 +428,37 @@ export async function streamArenaAsOpenAI({
   let finishReason = "stop";
   let usage = null;
   let accumulatedContent = "";
+  let accumulatedRawContent = "";
   let continuationExhausted = false;
   let clientDisconnectedEarly = false;
   let hasError = false;
+
+  const emitSseToolCall = ({ index, id, name, argumentsChunk }) => {
+    if (signal?.aborted || !responseWritable(httpResponse)) return false;
+    const toolCall = { index, id };
+    if (name) {
+      toolCall.type = "function";
+      toolCall.function = { name, arguments: "" };
+      finishReason = "tool_calls";
+    }
+    if (argumentsChunk !== undefined) {
+      toolCall.function = { arguments: argumentsChunk };
+      finishReason = "tool_calls";
+    }
+    return sse(httpResponse, {
+      id: completionIdRef.value,
+      object: "chat.completion.chunk",
+      created,
+      model,
+      choices: [{ index: 0, delta: { tool_calls: [toolCall] }, finish_reason: null }],
+    });
+  };
+
+  const transformer = new XmlToolCallStreamTransformer({
+    tools,
+    onContent: () => {},
+    onToolCall: emitSseToolCall,
+  });
 
   if (!sse(httpResponse, {
     id: completionIdRef.value,
@@ -428,10 +490,11 @@ export async function streamArenaAsOpenAI({
         created,
         completionIdRef,
         diagnosis,
-        previousContent: accumulatedContent,
+        previousContent: accumulatedRawContent,
         round,
         signal,
         contextChars,
+        transformer,
       });
 
       if (result.aborted || signal?.aborted || !responseWritable(httpResponse)) {
@@ -439,8 +502,11 @@ export async function streamArenaAsOpenAI({
         return;
       }
       accumulatedContent += result.emittedContent;
+      accumulatedRawContent += result.rawEmittedContent || "";
       usage = mergeUsage(usage, result.usage);
-      finishReason = result.finishReason || finishReason;
+      if (finishReason !== "tool_calls") {
+        finishReason = result.finishReason || finishReason;
+      }
 
       if (result.fatal || (result.error && !isTimeoutLikeError(result.error))) {
         hasError = true;
@@ -468,7 +534,7 @@ export async function streamArenaAsOpenAI({
         ...arenaBody,
         prompt: buildContinuationPrompt({
           originalPrompt: arenaBody.prompt,
-          accumulatedContent,
+          accumulatedContent: accumulatedRawContent,
           reason: continuationReason,
           contextChars,
         }),
