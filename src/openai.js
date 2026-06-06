@@ -14,6 +14,7 @@ import {
 } from "./arena.js";
 import { randomUUID } from "node:crypto";
 import { XmlToolCallStreamTransformer } from "./tools.js";
+import { saveImageAndGetUrl } from "./images.js";
 
 export function makeChatCompletion({ id, model, content, toolCalls = null, finishReason = "stop", usage = null }) {
   const created = Math.floor(Date.now() / 1000);
@@ -158,6 +159,7 @@ async function streamOneArenaRound({
   signal,
   contextChars,
   transformer,
+  host = null,
 }) {
   let arenaResponse;
   try {
@@ -337,8 +339,15 @@ async function streamOneArenaRound({
     }
     if (event.type === "content" && event.value) handleContent(eventText(event.value));
     if (event.type === "image" && event.value?.data) {
-      const mdImage = `\n![image](data:image/png;base64,${event.value.data})\n`;
-      handleContent(mdImage);
+      try {
+        const imageUrl = saveImageAndGetUrl(event.value.data, host);
+        const mdImage = `\n![image](${imageUrl})\n`;
+        handleContent(mdImage);
+      } catch (err) {
+        console.error("Failed to save image in streamOneArenaRound:", err);
+        const mdImage = `\n![image](data:image/png;base64,${event.value.data})\n`;
+        handleContent(mdImage);
+      }
     }
     if (event.type === "reasoning" || event.type === "redacted_reasoning") {
       parsed.reasoningContent += eventText(event.value);
@@ -412,6 +421,7 @@ export async function streamArenaAsOpenAI({
   contextChars = 12000,
   signal,
   tools = [],
+  host = null,
 }) {
   if (!responseWritable(httpResponse)) return;
   httpResponse.writeHead(200, {
@@ -495,6 +505,7 @@ export async function streamArenaAsOpenAI({
         signal,
         contextChars,
         transformer,
+        host,
       });
 
       if (result.aborted || signal?.aborted || !responseWritable(httpResponse)) {

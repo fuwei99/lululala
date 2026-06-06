@@ -54,3 +54,5 @@ export const CONTINUATION_CONTEXT_CHARS = integerEnv(
   12000,
   { min: 1000 },
 );
+export const IMAGE_BASE_URL =
+  process.env.IMAGE_BASE_URL || process.env.LMARENA_IMAGE_BASE_URL || "";

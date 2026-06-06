@@ -1,4 +1,5 @@
 import { ARENA_MODELS_TEST_ENDPOINT } from "./config.js";
+import { saveImageAndGetUrl } from "./images.js";
 
 function numberParam(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
@@ -413,6 +414,7 @@ export async function runArenaModelsTestWithContinuations({
   contextChars,
   autoContinue = true,
   signal,
+  host = null,
 }) {
   let currentBody = body;
   let content = "";
@@ -427,7 +429,7 @@ export async function runArenaModelsTestWithContinuations({
   for (let round = 0; round <= maxContinuations; round += 1) {
     throwIfAborted(signal);
     const res = await postArenaModelsTest(currentBody, { signal });
-    const parsed = await collectArenaResponse(res, { signal });
+    const parsed = await collectArenaResponse(res, { signal, host });
     const roundContent = stripOverlap(content, parsed.content, contextChars);
     content += roundContent;
     usage = mergeUsage(usage, parsed.usage);
@@ -510,7 +512,7 @@ export function parseArenaLine(line) {
   return { type: "unknown", prefix, payload, raw: line };
 }
 
-export async function collectArenaResponse(res, { signal } = {}) {
+export async function collectArenaResponse(res, { signal, host } = {}) {
   throwIfAborted(signal);
   const text = await res.text();
   throwIfAborted(signal);
@@ -566,7 +568,13 @@ export async function collectArenaResponse(res, { signal } = {}) {
     if (event.type === "image") {
       parsed.image = event.value?.data || parsed.image;
       if (parsed.image) {
-        parsed.content += `\n![image](data:image/png;base64,${parsed.image})\n`;
+        try {
+          const imageUrl = saveImageAndGetUrl(parsed.image, host);
+          parsed.content += `\n![image](${imageUrl})\n`;
+        } catch (err) {
+          console.error("Failed to save image in collectArenaResponse:", err);
+          parsed.content += `\n![image](data:image/png;base64,${parsed.image})\n`;
+        }
       }
     }
     if (event.type === "error") parsed.error = event.value;

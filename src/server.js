@@ -24,6 +24,7 @@ import {
   parseAllToolCalls,
   stripToolCalls
 } from "./tools.js";
+import { saveImageAndGetUrl } from "./images.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const imgDir = join(__dirname, "..", "generated_images");
@@ -343,6 +344,7 @@ async function handleChatCompletions(req, res) {
         contextChars: CONTINUATION_CONTEXT_CHARS,
         signal: client.signal,
         tools: request.tools,
+        host: req.headers.host,
       });
       client.markFinished();
       return;
@@ -354,6 +356,7 @@ async function handleChatCompletions(req, res) {
       maxContinuations,
       contextChars: CONTINUATION_CONTEXT_CHARS,
       signal: client.signal,
+      host: req.headers.host,
     });
     if (client.signal.aborted) return;
     const lastRound = completed.rounds.at(-1);
@@ -576,11 +579,9 @@ async function handleImagesGenerations(req, res) {
     if (responseFormat === "b64_json") {
       resObj.data.push({ b64_json: imageBase64 });
     } else {
-      const imgId = randomUUID();
-      mkdirSync(imgDir, { recursive: true });
-      const imgPath = join(imgDir, `${imgId}.png`);
       try {
-        writeFileSync(imgPath, Buffer.from(imageBase64, "base64"));
+        const imageUrl = saveImageAndGetUrl(imageBase64, req.headers.host);
+        resObj.data.push({ url: imageUrl });
       } catch (writeErr) {
         sendJson(res, 500, {
           error: {
@@ -592,8 +593,6 @@ async function handleImagesGenerations(req, res) {
         client.markFinished();
         return;
       }
-      const host = req.headers.host || `127.0.0.1:${PORT}`;
-      resObj.data.push({ url: `http://${host}/images/${imgId}.png` });
     }
 
     sendJson(res, 200, resObj);
