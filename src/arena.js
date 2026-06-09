@@ -569,3 +569,12 @@ export async function collectArenaResponse(res, { signal, host } = {}) {
   parsed.incompleteToolCalls = hasUnclosedToolCalls(parsed.content);
   return parsed;
 }
+
+export function getBeijingTimestamp() {
+  const d = new Date();
+  const offset = 8;
+  const localTime = d.getTime() + (d.getTimezoneOffset() * 60000);
+  const beijingTime = new Date(localTime + (3600000 * offset));
+  const iso = beijingTime.toISOString();
+  return `[${iso.slice(0, 10)} ${iso.slice(11, 19)}]`;
+}

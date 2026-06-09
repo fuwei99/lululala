@@ -11,6 +11,7 @@ import {
   shouldContinueArenaResponse,
   stripOverlap,
   throwIfAborted,
+  getBeijingTimestamp,
 } from "./arena.js";
 import { randomUUID } from "node:crypto";
 import { XmlToolCallStreamTransformer } from "./tools.js";
@@ -583,11 +584,11 @@ export async function streamArenaAsOpenAI({
     const inputLen = arenaBody.prompt ? arenaBody.prompt.length : 0;
     const outputChars = accumulatedContent.length;
     if (clientDisconnectedEarly || signal?.aborted || !responseWritable(httpResponse)) {
-      console.log(`[POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 200 (Client disconnected early) | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 200 (Client disconnected early) | Output: ${outputChars} chars`);
     } else if (hasError) {
-      console.log(`[POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 500 | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 500 | Output: ${outputChars} chars`);
     } else {
-      console.log(`[POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 200 | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 200 | Output: ${outputChars} chars`);
     }
   }
 

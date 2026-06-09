@@ -10,7 +10,7 @@ import {
   MAX_CONTINUATIONS,
   PORT,
 } from "./config.js";
-import { buildArenaBody, isAbortError, runArenaModelsTestWithContinuations } from "./arena.js";
+import { buildArenaBody, isAbortError, runArenaModelsTestWithContinuations, getBeijingTimestamp } from "./arena.js";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -142,7 +142,7 @@ function logReceivedRequest(path, request, model, prompt) {
   const stream = request.stream === true;
 
   if (path === "/v1/images/generations") {
-    console.log(`[Received] POST /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars`);
+    console.log(`${getBeijingTimestamp()} [Received] POST /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars`);
     return;
   }
 
@@ -179,7 +179,7 @@ function logReceivedRequest(path, request, model, prompt) {
     }
   }
 
-  console.log(log_parts.join(" | "));
+  console.log(`${getBeijingTimestamp()} ${log_parts.join(" | ")}`);
 }
 
 function logResponse(path, request, modelId, prompt, status, { outputChars = 0, error = null, earlyDisconnect = false } = {}) {
@@ -188,9 +188,9 @@ function logResponse(path, request, modelId, prompt, status, { outputChars = 0, 
 
   if (path === "/v1/images/generations") {
     if (error) {
-      console.log(`[POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars | Status: ${status} | Error: ${error}`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars | Status: ${status} | Error: ${error}`);
     } else {
-      console.log(`[POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars | Status: ${status} | Output: Image`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars | Status: ${status} | Output: Image`);
     }
     return;
   }
@@ -198,9 +198,9 @@ function logResponse(path, request, modelId, prompt, status, { outputChars = 0, 
   if (path === "/v1/chat/completions") {
     if (stream) {
       const statusText = earlyDisconnect ? "200 (Client disconnected early)" : String(status);
-      console.log(`[POST] /v1/chat/completions | Model: ${modelId} | Stream: True | Input: ${input_len} chars | Status: ${statusText} | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${modelId} | Stream: True | Input: ${input_len} chars | Status: ${statusText} | Output: ${outputChars} chars`);
     } else {
-      console.log(`[POST] /v1/chat/completions | Model: ${modelId} | Stream: False | Input: ${input_len} chars | Status: ${status} | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${modelId} | Stream: False | Input: ${input_len} chars | Status: ${status} | Output: ${outputChars} chars`);
     }
     return;
   }
@@ -260,7 +260,7 @@ async function handleModels(req, res) {
       max_continuations: MAX_CONTINUATIONS,
     },
   });
-  console.log("[GET] /v1/models | Status: 200");
+  console.log(`${getBeijingTimestamp()} [GET] /v1/models | Status: 200`);
 }
 
 async function handleChatCompletions(req, res) {
@@ -281,7 +281,7 @@ async function handleChatCompletions(req, res) {
       request = await readJson(req);
     } catch (e) {
       sendJson(res, 400, { error: { message: `Invalid JSON: ${e.message}`, type: "invalid_request_error" } });
-      console.log(`[POST] /v1/chat/completions | Status: 400 | Error: Invalid JSON`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Status: 400 | Error: Invalid JSON`);
       client.markFinished();
       return;
     }
@@ -295,7 +295,7 @@ async function handleChatCompletions(req, res) {
           type: "unsupported_model",
         },
       });
-      console.log(`[POST] /v1/chat/completions | Model: ${request.model} | Status: 400 | Error: Unsupported model`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${request.model} | Status: 400 | Error: Unsupported model`);
       client.markFinished();
       return;
     }
@@ -455,17 +455,17 @@ async function handleServeImage(req, res) {
   const filename = url.pathname.slice("/images/".length);
   if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
     sendJson(res, 400, { error: { message: "Bad request", type: "invalid_request_error" } });
-    console.log(`[GET] ${req.url} | Status: 400`);
+    console.log(`${getBeijingTimestamp()} [GET] ${req.url} | Status: 400`);
     return;
   }
   const filePath = join(imgDir, filename);
   if (existsSync(filePath)) {
     res.writeHead(200, { "Content-Type": "image/png" });
     res.end(readFileSync(filePath));
-    console.log(`[GET] ${req.url} | Status: 200`);
+    console.log(`${getBeijingTimestamp()} [GET] ${req.url} | Status: 200`);
   } else {
     sendJson(res, 404, { error: { message: "Not found", type: "not_found" } });
-    console.log(`[GET] ${req.url} | Status: 404`);
+    console.log(`${getBeijingTimestamp()} [GET] ${req.url} | Status: 404`);
   }
 }
 
@@ -487,7 +487,7 @@ async function handleImagesGenerations(req, res) {
       request = await readJson(req);
     } catch (e) {
       sendJson(res, 400, { error: { message: `Invalid JSON: ${e.message}`, type: "invalid_request_error" } });
-      console.log(`[POST] /v1/images/generations | Status: 400 | Error: Invalid JSON`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/images/generations | Status: 400 | Error: Invalid JSON`);
       client.markFinished();
       return;
     }
@@ -496,7 +496,7 @@ async function handleImagesGenerations(req, res) {
     const prompt = request.prompt;
     if (!prompt) {
       sendJson(res, 400, { error: { message: "Missing prompt in request body", type: "invalid_request_error" } });
-      console.log(`[POST] /v1/images/generations | Model: ${request.model || "gpt-image-2"} | Status: 400 | Error: Missing prompt`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/images/generations | Model: ${request.model || "gpt-image-2"} | Status: 400 | Error: Missing prompt`);
       client.markFinished();
       return;
     }
@@ -523,7 +523,7 @@ async function handleImagesGenerations(req, res) {
           type: "unsupported_model",
         },
       });
-      console.log(`[POST] /v1/images/generations | Model: ${request.model} | Status: 400 | Error: Unsupported model`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/images/generations | Model: ${request.model} | Status: 400 | Error: Unsupported model`);
       client.markFinished();
       return;
     }
@@ -620,9 +620,9 @@ async function router(req, res) {
     if (!isPublicGet && !checkClientAuth(req)) {
       sendJson(res, 401, { error: { message: "Unauthorized", type: "invalid_api_key" } });
       if (req.method === "POST") {
-        console.log(`[POST] ${url.pathname} | Status: 401 | Error: Unauthorized`);
+        console.log(`${getBeijingTimestamp()} [POST] ${url.pathname} | Status: 401 | Error: Unauthorized`);
       } else {
-        console.log(`[GET] ${url.pathname} | Status: 401`);
+        console.log(`${getBeijingTimestamp()} [GET] ${url.pathname} | Status: 401`);
       }
       return;
     }
@@ -655,9 +655,9 @@ async function router(req, res) {
     }
     sendJson(res, 404, { error: { message: "Not found", type: "not_found" } });
     if (req.method === "POST") {
-      console.log(`[POST] ${url.pathname} | Status: 404 | Error: Path not found`);
+      console.log(`${getBeijingTimestamp()} [POST] ${url.pathname} | Status: 404 | Error: Path not found`);
     } else {
-      console.log(`[GET] ${url.pathname} | Status: 404`);
+      console.log(`${getBeijingTimestamp()} [GET] ${url.pathname} | Status: 404`);
     }
   } catch (err) {
     if (isAbortError(err) || !responseWritable(res)) return;
@@ -669,9 +669,9 @@ async function router(req, res) {
     });
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (req.method === "POST") {
-      console.log(`[POST] ${url.pathname} | Status: 500 | Error: ${err?.message || String(err)}`);
+      console.log(`${getBeijingTimestamp()} [POST] ${url.pathname} | Status: 500 | Error: ${err?.message || String(err)}`);
     } else {
-      console.log(`[GET] ${url.pathname} | Status: 500`);
+      console.log(`${getBeijingTimestamp()} [GET] ${url.pathname} | Status: 500`);
     }
   }
 }
