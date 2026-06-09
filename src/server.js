@@ -10,7 +10,7 @@ import {
   MAX_CONTINUATIONS,
   PORT,
 } from "./config.js";
-import { buildArenaBody, isAbortError, runArenaModelsTestWithContinuations, getBeijingTimestamp } from "./arena.js";
+import { buildArenaBody, isAbortError, runArenaModelsTestWithContinuations, getBeijingTimestamp, countWordsAndCharacters } from "./arena.js";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -138,11 +138,12 @@ function checkClientAuth(req) {
 
 function logReceivedRequest(path, request, model, prompt) {
   const input_len = prompt ? prompt.length : 0;
+  const input_words = countWordsAndCharacters(prompt);
   const modelId = request.model || model?.id || "unknown";
   const stream = request.stream === true;
 
   if (path === "/v1/images/generations") {
-    console.log(`${getBeijingTimestamp()} [Received] POST /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars`);
+    console.log(`${getBeijingTimestamp()} [Received] POST /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars (${input_words} words)`);
     return;
   }
 
@@ -155,7 +156,7 @@ function logReceivedRequest(path, request, model, prompt) {
     `[Received] POST /v1/chat/completions`,
     `Model: ${modelId}`,
     `Stream: ${stream}`,
-    `Input: ${input_len} chars`
+    `Input: ${input_len} chars (${input_words} words)`
   ];
 
   if (reasoning_effort !== undefined && reasoning_effort !== null) {
@@ -182,25 +183,29 @@ function logReceivedRequest(path, request, model, prompt) {
   console.log(`${getBeijingTimestamp()} ${log_parts.join(" | ")}`);
 }
 
-function logResponse(path, request, modelId, prompt, status, { outputChars = 0, error = null, earlyDisconnect = false } = {}) {
+function logResponse(path, request, modelId, prompt, status, { outputContent = "", error = null, earlyDisconnect = false } = {}) {
   const input_len = prompt ? prompt.length : 0;
+  const input_words = countWordsAndCharacters(prompt);
   const stream = request?.stream === true;
 
   if (path === "/v1/images/generations") {
     if (error) {
-      console.log(`${getBeijingTimestamp()} [POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars | Status: ${status} | Error: ${error}`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars (${input_words} words) | Status: ${status} | Error: ${error}`);
     } else {
-      console.log(`${getBeijingTimestamp()} [POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars | Status: ${status} | Output: Image`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/images/generations | Model: ${modelId} | Input: ${input_len} chars (${input_words} words) | Status: ${status} | Output: Image`);
     }
     return;
   }
 
+  const output_len = outputContent ? outputContent.length : 0;
+  const output_words = countWordsAndCharacters(outputContent);
+
   if (path === "/v1/chat/completions") {
     if (stream) {
       const statusText = earlyDisconnect ? "200 (Client disconnected early)" : String(status);
-      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${modelId} | Stream: True | Input: ${input_len} chars | Status: ${statusText} | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${modelId} | Stream: True | Input: ${input_len} chars (${input_words} words) | Status: ${statusText} | Output: ${output_len} chars (${output_words} words)`);
     } else {
-      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${modelId} | Stream: False | Input: ${input_len} chars | Status: ${status} | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${modelId} | Stream: False | Input: ${input_len} chars (${input_words} words) | Status: ${status} | Output: ${output_len} chars (${output_words} words)`);
     }
     return;
   }
@@ -393,7 +398,7 @@ async function handleChatCompletions(req, res) {
           continuation_rounds: completed.rounds,
         },
       });
-      logResponse("/v1/chat/completions", request, request.model, prompt, 502, { error: upstreamError, outputChars: completed.content?.length || 0 });
+      logResponse("/v1/chat/completions", request, request.model, prompt, 502, { error: upstreamError, outputContent: completed.content || "" });
       client.markFinished();
       return;
     }
@@ -441,7 +446,7 @@ async function handleChatCompletions(req, res) {
         },
       },
     );
-    logResponse("/v1/chat/completions", request, request.model, prompt, 200, { outputChars: completed.content?.length || 0 });
+    logResponse("/v1/chat/completions", request, request.model, prompt, 200, { outputContent: completed.content || "" });
     client.markFinished();
   } catch (err) {
     if (client.signal.aborted || isAbortError(err)) return;

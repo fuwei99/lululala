@@ -634,14 +634,17 @@ export async function streamArenaAsOpenAI({
   } finally {
     clearInterval(heartbeat);
     const logModel = clientModel || model;
-    const inputLen = arenaBody.prompt ? arenaBody.prompt.length : 0;
+    const prompt = arenaBody.prompt || "";
+    const inputLen = prompt.length;
+    const inputWords = countWordsAndCharacters(prompt);
     const outputChars = accumulatedContent.length;
+    const outputWords = countWordsAndCharacters(accumulatedContent);
     if (clientDisconnectedEarly || signal?.aborted || !responseWritable(httpResponse)) {
-      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 200 (Client disconnected early) | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars (${inputWords} words) | Status: 200 (Client disconnected early) | Output: ${outputChars} chars (${outputWords} words)`);
     } else if (hasError) {
-      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 500 | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars (${inputWords} words) | Status: 500 | Output: ${outputChars} chars (${outputWords} words)`);
     } else {
-      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars | Status: 200 | Output: ${outputChars} chars`);
+      console.log(`${getBeijingTimestamp()} [POST] /v1/chat/completions | Model: ${logModel} | Stream: True | Input: ${inputLen} chars (${inputWords} words) | Status: 200 | Output: ${outputChars} chars (${outputWords} words)`);
     }
   }
 

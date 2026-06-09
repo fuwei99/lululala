@@ -417,7 +417,7 @@ export async function runArenaModelsTestWithContinuations({
         round,
         modelId: clientModelId || body.model,
         stream: false,
-        inputLen: currentBody.prompt ? currentBody.prompt.length : 0,
+        prompt: currentBody.prompt,
         request: body,
       });
     }
@@ -431,9 +431,9 @@ export async function runArenaModelsTestWithContinuations({
         round,
         modelId: clientModelId || body.model,
         stream: false,
-        inputLen: currentBody.prompt ? currentBody.prompt.length : 0,
+        prompt: currentBody.prompt,
         status: res.status,
-        outputChars: roundContent.length,
+        outputContent: roundContent,
       });
     }
 
@@ -627,15 +627,17 @@ export function getBeijingTimestamp() {
   return `[${iso.slice(0, 10)} ${iso.slice(11, 23)}]`;
 }
 
-export function logContinuationStart({ round, modelId, stream, inputLen, request }) {
+export function logContinuationStart({ round, modelId, stream, prompt, request }) {
   const padRound = String(round).padStart(2, "0");
+  const inputLen = prompt ? prompt.length : 0;
+  const inputWords = countWordsAndCharacters(prompt);
   const reasoning_effort = request?.reasoning_effort ?? request?.reasoning?.effort;
 
   const log_parts = [
     `[continue${padRound}] POST /v1/chat/completions`,
     `Model: ${modelId}`,
     `Stream: ${stream ? "true" : "false"}`,
-    `Input: ${inputLen} chars`
+    `Input: ${inputLen} chars (${inputWords} words)`
   ];
 
   if (reasoning_effort !== undefined && reasoning_effort !== null) {
@@ -645,8 +647,12 @@ export function logContinuationStart({ round, modelId, stream, inputLen, request
   console.log(`${getBeijingTimestamp()} ${log_parts.join(" | ")}`);
 }
 
-export function logContinuationResponse({ round, modelId, stream, inputLen, status, outputChars }) {
+export function logContinuationResponse({ round, modelId, stream, prompt, status, outputContent }) {
   const padRound = String(round).padStart(2, "0");
   const streamText = stream ? "True" : "False";
-  console.log(`${getBeijingTimestamp()} [continue${padRound}-post] /v1/chat/completions | Model: ${modelId} | Stream: ${streamText} | Input: ${inputLen} chars | Status: ${status} | Output: ${outputChars} chars`);
+  const inputLen = prompt ? prompt.length : 0;
+  const inputWords = countWordsAndCharacters(prompt);
+  const outputChars = outputContent ? outputContent.length : 0;
+  const outputWords = countWordsAndCharacters(outputContent);
+  console.log(`${getBeijingTimestamp()} [continue${padRound}-post] /v1/chat/completions | Model: ${modelId} | Stream: ${streamText} | Input: ${inputLen} chars (${inputWords} words) | Status: ${status} | Output: ${outputChars} chars (${outputWords} words)`);
 }
