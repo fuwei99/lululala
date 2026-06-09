@@ -1,6 +1,8 @@
 import {
   buildContinuationPrompt,
   CONTINUATION_MARKER,
+  STOP_MARKER,
+  countWordsAndCharacters,
   eventText,
   isAbortError,
   isTimeoutLikeError,
@@ -114,9 +116,10 @@ function pendingCouldStillBeOverlap(previousContent, pending, maxOverlap) {
   return tail.includes(pending);
 }
 
-function createContinuationMarkerFilter(onContent, onMarker) {
+function createContinuationMarkerFilter(onContent, onMarker, onStop) {
   let pending = "";
-  const keepChars = CONTINUATION_MARKER.length - 1;
+  const maxMarkerLen = Math.max(CONTINUATION_MARKER.length, STOP_MARKER.length);
+  const keepChars = maxMarkerLen - 1;
 
   return {
     push(content) {
@@ -124,6 +127,17 @@ function createContinuationMarkerFilter(onContent, onMarker) {
       pending += content;
 
       for (;;) {
+        // Check for STOP_MARKER
+        const stopAt = pending.indexOf(STOP_MARKER);
+        if (stopAt !== -1) {
+          const before = pending.slice(0, stopAt);
+          if (before && onContent(before) === false) return false;
+          onStop();
+          pending = pending.slice(stopAt + STOP_MARKER.length);
+          continue;
+        }
+
+        // Check for CONTINUATION_MARKER
         const markerAt = pending.indexOf(CONTINUATION_MARKER);
         if (markerAt !== -1) {
           const before = pending.slice(0, markerAt);
@@ -291,9 +305,15 @@ async function streamOneArenaRound({
     });
   };
 
-  const markerFilter = createContinuationMarkerFilter(emitSseContent, () => {
-    parsed.continuationMarkerSeen = true;
-  });
+  const markerFilter = createContinuationMarkerFilter(
+    emitSseContent,
+    () => {
+      parsed.continuationMarkerSeen = true;
+    },
+    () => {
+      parsed.endMarkerSeen = true;
+    }
+  );
 
   if (transformer) {
     transformer.onContent = (content) => {
@@ -389,8 +409,10 @@ async function streamOneArenaRound({
       for (const line of lines) {
         throwIfAborted(signal);
         handleLine(line);
+        if (parsed.endMarkerSeen) break;
         if (!responseWritable(httpResponse)) return { ...parsed, aborted: true };
       }
+      if (parsed.endMarkerSeen) break;
     }
   } catch (error) {
     if (isAbortError(error)) return { ...parsed, aborted: true };
@@ -401,7 +423,7 @@ async function streamOneArenaRound({
     };
   }
   buffer += decoder.decode();
-  if (buffer.trim()) handleLine(buffer);
+  if (buffer.trim() && !parsed.endMarkerSeen) handleLine(buffer);
   if (!overlapResolved) flushPendingOverlap();
   if (transformer) {
     transformer.flush();
@@ -411,6 +433,10 @@ async function streamOneArenaRound({
   if (parsed.content.includes(CONTINUATION_MARKER)) {
     parsed.continuationMarkerSeen = true;
     parsed.content = removeContinuationMarkers(parsed.content);
+  }
+  if (parsed.content.includes(STOP_MARKER)) {
+    parsed.endMarkerSeen = true;
+    parsed.content = parsed.content.replaceAll(STOP_MARKER, "");
   }
 
   parsed.continuationReason = shouldContinueArenaResponse(parsed);

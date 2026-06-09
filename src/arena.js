@@ -247,6 +247,17 @@ export function isTimeoutLikeError(error) {
 }
 
 export const CONTINUATION_MARKER = "<<<LMARENA_CONTINUE>>>";
+export const STOP_MARKER = "<|||STOP|||>";
+
+export function countWordsAndCharacters(text) {
+  if (!text) return 0;
+  const hanMatches = text.match(/[\u4e00-\u9fff]/gu) || [];
+  const hanCount = hanMatches.length;
+  const remaining = text.replace(/[\u4e00-\u9fff]/gu, " ");
+  const wordMatches = remaining.match(/[\p{L}\p{N}]+/gu) || [];
+  const wordCount = wordMatches.length;
+  return hanCount + wordCount;
+}
 
 export function removeContinuationMarkers(content) {
   return String(content || "").replaceAll(CONTINUATION_MARKER, "").replace(/[ \t]+\n/g, "\n");
@@ -340,6 +351,7 @@ export function looksLikeIncompleteTail(content) {
 
 export function shouldContinueArenaResponse(parsed) {
   if (!parsed) return null;
+  if (parsed.endMarkerSeen) return null;
   if (parsed.incompleteToolCalls || hasUnclosedToolCalls(parsed.content)) return "unclosed_tool_calls";
   if (parsed.continuationMarkerSeen) return "assistant_requested_continuation_marker";
   if (isTimeoutLikeError(parsed.error)) return "timeout";
@@ -360,14 +372,22 @@ export function shouldContinueArenaResponse(parsed) {
 
 export function buildContinuationPrompt({ originalPrompt, accumulatedContent, reason, contextChars }) {
   const content = accumulatedContent || "";
+  const wordCount = countWordsAndCharacters(content);
   let basePrompt = originalPrompt.trim();
+
+  // Decide system note based on reason (e.g. tool call truncation)
+  let systemNote = `[System Note: The output was truncated due to an error. Start immediately with the very next character where you left off. Do NOT repeat any of the text above. Do NOT output any greeting, conversational transitions, or explanations. You have already generated ${wordCount} words/characters for this message so far. If you feel the response is already sufficient, append ${STOP_MARKER} at the end.]`;
+  if (reason === "unclosed_tool_calls") {
+    systemNote = `[System Note: The output was truncated mid-tool-call. Do NOT start a new <tool_calls> block. Look at the last incomplete line, and directly continue writing the remaining XML/JSON parameters. Make sure all XML tags and JSON structures are closed correctly. You have already generated ${wordCount} words/characters.]`;
+  }
+
   if (basePrompt.endsWith("\bAssistant:")) {
     basePrompt = basePrompt.slice(0, -"\bAssistant:".length).trim();
   } else if (basePrompt.endsWith("<<<ASSISTANT>>>")) {
     basePrompt = basePrompt.slice(0, -"<<<ASSISTANT>>>".length).trim();
-    return `${basePrompt}\n\n<<<ASSISTANT>>>\n${content}\n[System Note: The output was truncated due to a error.Continue generating from where you left off without repeating the previous content.]`;
+    return `${basePrompt}\n\n<<<ASSISTANT>>>\n${content}\n${systemNote}`;
   }
-  return `${basePrompt}\n\n\bAssistant: ${content}\n[System Note: The output was truncated due to a error.Continue generating from where you left off without repeating the previous content.]`;
+  return `${basePrompt}\n\n\bAssistant: ${content}\n${systemNote}`;
 }
 
 export async function runArenaModelsTestWithContinuations({
@@ -565,6 +585,10 @@ export async function collectArenaResponse(res, { signal, host } = {}) {
   if (parsed.content.includes(CONTINUATION_MARKER)) {
     parsed.continuationMarkerSeen = true;
     parsed.content = removeContinuationMarkers(parsed.content);
+  }
+  if (parsed.content.includes(STOP_MARKER)) {
+    parsed.endMarkerSeen = true;
+    parsed.content = parsed.content.replaceAll(STOP_MARKER, "");
   }
   parsed.incompleteToolCalls = hasUnclosedToolCalls(parsed.content);
   return parsed;
