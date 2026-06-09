@@ -311,7 +311,7 @@ async function streamOneArenaRound({
   };
 
   const overlapSearchChars = Math.max(2000, contextChars || 2000);
-  let overlapResolved = round === 0;
+  let overlapResolved = true; // round === 0; // Commented out overlap stripping: always resolved
   let pendingOverlap = "";
 
   const flushPendingOverlap = () => {
@@ -423,7 +423,7 @@ export async function streamArenaAsOpenAI({
   clientModel = null,
   diagnosis = null,
   autoContinue = true,
-  maxContinuations = 12,
+  maxContinuations = 20,
   contextChars = 12000,
   signal,
   tools = [],

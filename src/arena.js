@@ -271,6 +271,8 @@ export function mergeUsage(total, next) {
 }
 
 export function stripOverlap(previous, next, maxOverlap = 2000) {
+  // Overlap stripping algorithm commented out as requested
+  /*
   if (!previous || !next) return next || "";
   const haystack = previous.slice(-maxOverlap);
   const limit = Math.min(haystack.length, next.length);
@@ -278,6 +280,7 @@ export function stripOverlap(previous, next, maxOverlap = 2000) {
   for (let size = limit; size >= minOverlap; size -= 1) {
     if (haystack.endsWith(next.slice(0, size))) return next.slice(size);
   }
+  */
   return next;
 }
 
@@ -356,58 +359,15 @@ export function shouldContinueArenaResponse(parsed) {
 }
 
 export function buildContinuationPrompt({ originalPrompt, accumulatedContent, reason, contextChars }) {
-  if (!accumulatedContent) {
-    const reasoningOnly = String(reason || "").includes("reasoning");
-    return [
-      "Latency-critical generation mode.",
-      reasoningOnly
-        ? "The prior attempt spent time in hidden reasoning and emitted no visible answer."
-        : "The prior attempt ended before visible content arrived.",
-      "The scoring target is earliest visible final-answer bytes, not hidden reasoning.",
-      "Before the first token, do at most one private routing decision.",
-      `Reason: ${reason}.`,
-      "",
-      "Output contract:",
-      "Do not think step by step. Do not outline. Do not explain.",
-      "Start now with the actual answer or artifact and keep writing it.",
-      "Preserve the requested language, format, voice, and role state.",
-      `If the answer is not fully complete when this call ends, append ${CONTINUATION_MARKER} as the final line. The bridge removes it.`,
-      "If the answer is fully complete, do not append the marker.",
-      "",
-      "Original request:",
-      "<<<REQUEST>>>",
-      originalPrompt,
-      "<<<END_REQUEST>>>",
-    ].join("\n");
+  const content = accumulatedContent || "";
+  let basePrompt = originalPrompt.trim();
+  if (basePrompt.endsWith("\bAssistant:")) {
+    basePrompt = basePrompt.slice(0, -"\bAssistant:".length).trim();
+  } else if (basePrompt.endsWith("<<<ASSISTANT>>>")) {
+    basePrompt = basePrompt.slice(0, -"<<<ASSISTANT>>>".length).trim();
+    return `${basePrompt}\n\n<<<ASSISTANT>>>\n${content}\n[System Note: The output was truncated due to a error.Continue generating from where you left off without repeating the previous content.]`;
   }
-
-  return [
-    "Latency-critical continuation mode.",
-    "The scoring target is earliest visible continuation bytes, not hidden reasoning.",
-    "Before the first token, do at most one private routing decision.",
-    `Reason: ${reason}.`,
-    "",
-    "Continue the prior assistant answer from exactly after the delivered context below.",
-    "",
-    "Complete delivered answer so far:",
-    "<<<DELIVERED_CONTEXT>>>",
-    accumulatedContent,
-    "<<<END_DELIVERED_CONTEXT>>>",
-    "",
-    "Output contract:",
-    "Do not think step by step. Do not outline. Do not explain.",
-    "First visible character must be the next character after the delivered context.",
-    "Do not repeat the delivered context, restart the answer, summarize, or add a transition sentence.",
-    "Preserve the same language, formatting, code style, voice, character, and roleplay state.",
-    "If continuing code, keep writing code; do not reopen a markdown fence unless the delivered context is inside one.",
-    `If the answer is still incomplete at the end of this call, append ${CONTINUATION_MARKER} as the final line. The bridge removes it.`,
-    "If the answer is fully complete, do not append the marker.",
-    "",
-    "Original request for constraints only:",
-    "<<<REQUEST>>>",
-    originalPrompt,
-    "<<<END_REQUEST>>>",
-  ].join("\n");
+  return `${basePrompt}\n\n\bAssistant: ${content}\n[System Note: The output was truncated due to a error.Continue generating from where you left off without repeating the previous content.]`;
 }
 
 export async function runArenaModelsTestWithContinuations({
