@@ -376,7 +376,7 @@ export function buildContinuationPrompt({ originalPrompt, accumulatedContent, re
   let basePrompt = originalPrompt.trim();
 
   // Decide system note based on reason (e.g. tool call truncation)
-  let systemNote = `[System Note: The output was truncated due to an error. Start immediately with the very next character where you left off. Do NOT repeat any of the text above. Do NOT output any greeting, conversational transitions, or explanations. You have already generated ${wordCount} words/characters for this message so far. If you feel the response is already sufficient, append ${STOP_MARKER} at the end.]`;
+  let systemNote = `[System Note: The output was truncated due to an error. Start immediately with the very next character where you left off. Do NOT repeat any of the text above. Do NOT output any greeting, conversational transitions, or explanations. You have already generated ${wordCount} words/characters for this message so far. If you feel the response is already sufficient, append ${STOP_MARKER} at the end and stop generating.]`;
   if (reason === "unclosed_tool_calls") {
     systemNote = `[System Note: The output was truncated mid-tool-call. Do NOT start a new <tool_calls> block. Look at the last incomplete line, and directly continue writing the remaining XML/JSON parameters. Make sure all XML tags and JSON structures are closed correctly. You have already generated ${wordCount} words/characters.]`;
   }
