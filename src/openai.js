@@ -534,7 +534,7 @@ export async function streamArenaAsOpenAI({
           round,
           modelId: clientModel || model,
           stream: true,
-          inputLen: currentBody.prompt ? currentBody.prompt.length : 0,
+          prompt: currentBody.prompt,
           request: arenaBody,
         });
       }
@@ -560,15 +560,14 @@ export async function streamArenaAsOpenAI({
       }
 
       if (round > 0) {
-        const roundOutput = result.emittedContent ? result.emittedContent.length : 0;
         const status = result.fatal ? 500 : (result.aborted ? "200 (Client disconnected early)" : 200);
         logContinuationResponse({
           round,
           modelId: clientModel || model,
           stream: true,
-          inputLen: currentBody.prompt ? currentBody.prompt.length : 0,
+          prompt: currentBody.prompt,
           status,
-          outputChars: roundOutput,
+          outputContent: result.emittedContent,
         });
       }
 
