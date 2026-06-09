@@ -356,6 +356,7 @@ async function handleChatCompletions(req, res) {
       contextChars: CONTINUATION_CONTEXT_CHARS,
       signal: client.signal,
       host: req.headers.host,
+      clientModelId: openaiModelId,
     });
     if (client.signal.aborted) return;
     const lastRound = completed.rounds.at(-1);

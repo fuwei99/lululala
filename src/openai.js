@@ -14,6 +14,8 @@ import {
   stripOverlap,
   throwIfAborted,
   getBeijingTimestamp,
+  logContinuationStart,
+  logContinuationResponse,
 } from "./arena.js";
 import { randomUUID } from "node:crypto";
 import { XmlToolCallStreamTransformer } from "./tools.js";
@@ -526,6 +528,17 @@ export async function streamArenaAsOpenAI({
     let currentBody = arenaBody;
     for (let round = 0; round <= maxContinuations; round += 1) {
       throwIfAborted(signal);
+
+      if (round > 0) {
+        logContinuationStart({
+          round,
+          modelId: clientModel || model,
+          stream: true,
+          inputLen: currentBody.prompt ? currentBody.prompt.length : 0,
+          request: arenaBody,
+        });
+      }
+
       const result = await streamOneArenaRound({
         arenaBody: currentBody,
         httpResponse,
@@ -545,6 +558,20 @@ export async function streamArenaAsOpenAI({
         clientDisconnectedEarly = true;
         return;
       }
+
+      if (round > 0) {
+        const roundOutput = result.emittedContent ? result.emittedContent.length : 0;
+        const status = result.fatal ? 500 : (result.aborted ? "200 (Client disconnected early)" : 200);
+        logContinuationResponse({
+          round,
+          modelId: clientModel || model,
+          stream: true,
+          inputLen: currentBody.prompt ? currentBody.prompt.length : 0,
+          status,
+          outputChars: roundOutput,
+        });
+      }
+
       accumulatedContent += result.emittedContent;
       accumulatedRawContent += result.rawEmittedContent || "";
       usage = mergeUsage(usage, result.usage);

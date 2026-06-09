@@ -397,6 +397,7 @@ export async function runArenaModelsTestWithContinuations({
   autoContinue = true,
   signal,
   host = null,
+  clientModelId = null,
 }) {
   let currentBody = body;
   let content = "";
@@ -410,9 +411,32 @@ export async function runArenaModelsTestWithContinuations({
 
   for (let round = 0; round <= maxContinuations; round += 1) {
     throwIfAborted(signal);
+
+    if (round > 0) {
+      logContinuationStart({
+        round,
+        modelId: clientModelId || body.model,
+        stream: false,
+        inputLen: currentBody.prompt ? currentBody.prompt.length : 0,
+        request: body,
+      });
+    }
+
     const res = await postArenaModelsTest(currentBody, { signal });
     const parsed = await collectArenaResponse(res, { signal, host });
     const roundContent = stripOverlap(content, parsed.content, contextChars);
+
+    if (round > 0) {
+      logContinuationResponse({
+        round,
+        modelId: clientModelId || body.model,
+        stream: false,
+        inputLen: currentBody.prompt ? currentBody.prompt.length : 0,
+        status: res.status,
+        outputChars: roundContent.length,
+      });
+    }
+
     content += roundContent;
     usage = mergeUsage(usage, parsed.usage);
     messageId = messageId || parsed.messageId;
@@ -601,4 +625,28 @@ export function getBeijingTimestamp() {
   const beijingTime = new Date(localTime + (3600000 * offset));
   const iso = beijingTime.toISOString();
   return `[${iso.slice(0, 10)} ${iso.slice(11, 23)}]`;
+}
+
+export function logContinuationStart({ round, modelId, stream, inputLen, request }) {
+  const padRound = String(round).padStart(2, "0");
+  const reasoning_effort = request?.reasoning_effort ?? request?.reasoning?.effort;
+
+  const log_parts = [
+    `[continue${padRound}] POST /v1/chat/completions`,
+    `Model: ${modelId}`,
+    `Stream: ${stream ? "true" : "false"}`,
+    `Input: ${inputLen} chars`
+  ];
+
+  if (reasoning_effort !== undefined && reasoning_effort !== null) {
+    log_parts.push(`Effort: ${reasoning_effort}`);
+  }
+
+  console.log(`${getBeijingTimestamp()} ${log_parts.join(" | ")}`);
+}
+
+export function logContinuationResponse({ round, modelId, stream, inputLen, status, outputChars }) {
+  const padRound = String(round).padStart(2, "0");
+  const streamText = stream ? "True" : "False";
+  console.log(`${getBeijingTimestamp()} [continue${padRound}-post] /v1/chat/completions | Model: ${modelId} | Stream: ${streamText} | Input: ${inputLen} chars | Status: ${status} | Output: ${outputChars} chars`);
 }
